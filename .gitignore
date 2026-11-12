@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+# publish copy used for the claude.ai artifact; website/index.html is the real site
+website/_artifact.html
+# Spectre / OCEAN outputs
+virtuoso/psf*/
+*.raw
+*.log
+*.ahdlSimDB/
+.DS_Store
+Thumbs.db

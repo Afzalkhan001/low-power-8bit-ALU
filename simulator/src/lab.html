@@ -1,0 +1,690 @@
+<title>ALU8 Virtual Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: a bench instrument. Controls and readout up top, then the circuit, then timing,
+   power and waveforms, like the panels of a logic analyser. Logic 1 = amber, logic 0 = slate. */
+:root {
+  --bg: #eceff3; --panel: #ffffff; --panel-2: #f5f7fa; --ink: #142033; --muted: #5a687b;
+  --line: #d3dae3; --hi: #df7f00; --hi-soft: #fdf0dc; --lo: #9aa6b5; --accent: #24508f;
+  --u-arith: #13806b; --u-mul: #7b4bc4; --u-logic: #2c6fd6; --u-shift: #c03a70; --u-ctrl: #5a687b;
+  --good: #1d7a3e; --bad: #b42318; --warn: #a15c00;
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d131b; --panel: #141c27; --panel-2: #1a2330; --ink: #e3e9f1; --muted: #8e9cb0;
+  --line: #273345; --hi: #ffb23e; --hi-soft: #3a2a12; --lo: #4d5b6c; --accent: #86acef;
+  --u-arith: #3cc6a3; --u-mul: #b08af0; --u-logic: #6ea3ff; --u-shift: #f0739f; --u-ctrl: #8e9cb0;
+  --good: #4cc27a; --bad: #ff7b6e; --warn: #f0b050; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0d131b; --panel: #141c27; --panel-2: #1a2330; --ink: #e3e9f1; --muted: #8e9cb0;
+  --line: #273345; --hi: #ffb23e; --hi-soft: #3a2a12; --lo: #4d5b6c; --accent: #86acef;
+  --u-arith: #3cc6a3; --u-mul: #b08af0; --u-logic: #6ea3ff; --u-shift: #f0739f; --u-ctrl: #8e9cb0;
+  --good: #4cc27a; --bad: #ff7b6e; --warn: #f0b050; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 1.7rem; }
+h2 { font-size: 1.1rem; }
+p { margin: 0; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 0.82rem; }
+.eyebrow { font: 600 0.72rem/1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+header.top .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 0.78rem/1 var(--f-mono); padding: 6px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--muted); }
+.chip b { color: var(--ink); font-weight: 600; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; min-width: 0; display: grid; gap: 12px; align-content: start; }
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- operand bit switches */
+.operand { display: grid; gap: 6px; }
+.operand-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bits { display: grid; grid-template-columns: repeat(8, minmax(0, 40px)); gap: 4px; }
+.bitbtn { width: auto; min-width: 0; height: 46px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel-2);
+  font: 700 1.15rem/1 var(--f-mono); color: var(--lo); cursor: pointer; display: grid; place-items: center; padding: 4px 0 2px; }
+.bitbtn small { font: 500 0.6rem/1 var(--f-mono); color: var(--muted); }
+.bitbtn[aria-pressed="true"] { background: var(--hi-soft); color: var(--hi); border-color: var(--hi); }
+.bitbtn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.numbox { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; color: var(--muted); }
+.numbox input { width: 64px; font: 600 0.95rem var(--f-mono); padding: 5px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-2); color: var(--ink); }
+.operand.unused .bits { opacity: 0.45; }
+
+.opgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.opbtn { text-align: left; border: 1px solid var(--line); border-left: 4px solid var(--uc); border-radius: 5px; background: var(--panel-2);
+  color: var(--ink); padding: 6px 8px; cursor: pointer; display: grid; gap: 1px; font-family: var(--f-body); }
+.opbtn .code { font: 500 0.7rem var(--f-mono); color: var(--muted); }
+.opbtn .mn { font: 700 0.95rem var(--f-mono); }
+.opbtn[aria-pressed="true"] { background: var(--uc); color: var(--panel); border-color: var(--uc); }
+.opbtn[aria-pressed="true"] .code { color: var(--panel); opacity: 0.85; }
+.u-arith { --uc: var(--u-arith); } .u-mul { --uc: var(--u-mul); } .u-logic { --uc: var(--u-logic); } .u-shift { --uc: var(--u-shift); } .u-ctrl { --uc: var(--u-ctrl); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button.btn { font: 600 0.85rem var(--f-body); padding: 7px 12px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); cursor: pointer; }
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.switch { display: inline-flex; gap: 8px; align-items: center; font-size: 0.88rem; cursor: pointer; }
+.switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* ---------- result */
+.leds { display: grid; grid-template-columns: repeat(8, minmax(0, 40px)); gap: 4px; }
+.led { min-width: 0; height: 40px; border-radius: 5px; display: grid; place-items: center; font: 700 1.2rem/1 var(--f-mono);
+  background: var(--panel-2); color: var(--lo); border: 1px solid var(--line); }
+.led.on { background: var(--hi); color: var(--panel); border-color: var(--hi); }
+.led.dim { opacity: 0.4; }
+.flags { display: flex; gap: 6px; flex-wrap: wrap; }
+.flag { display: grid; justify-items: center; gap: 3px; width: 62px; }
+.flag .led { width: 46px; height: 34px; font-size: 1rem; }
+.flag span { font: 500 0.68rem/1.25 var(--f-mono); color: var(--muted); text-align: center; }
+.flag span b { color: var(--ink); font-size: 0.8rem; }
+.readout { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.9rem; }
+.readout b { font: 700 1.25rem var(--f-mono); }
+.op-sentence { font: 600 1.05rem var(--f-mono); }
+
+table.cols { border-collapse: collapse; font: 0.92rem/1.25 var(--f-mono); font-variant-numeric: tabular-nums; }
+table.cols td, table.cols th { padding: 2px 5px; text-align: center; white-space: nowrap; }
+table.cols th { font-weight: 500; color: var(--muted); font-size: 0.72rem; }
+table.cols td.lab { text-align: left; color: var(--muted); font-family: var(--f-body); font-size: 0.82rem; padding-right: 10px; }
+table.cols td.dec { text-align: left; color: var(--ink); padding-left: 12px; }
+table.cols tr.sum td { border-top: 2px solid var(--ink); }
+table.cols tr.sel td:not(.lab) { background: var(--hi-soft); }
+table.cols tr.sel td.lab { color: var(--ink); font-weight: 600; }
+.b1 { color: var(--hi); font-weight: 700; } .b0 { color: var(--lo); }
+.scroll-x { overflow-x: auto; min-width: 0; }
+.note { font-size: 0.88rem; color: var(--muted); max-width: 70ch; }
+.note b { color: var(--ink); }
+
+/* ---------- svg diagram */
+svg text { font-family: var(--f-body); }
+svg .t-mono { font-family: var(--f-mono); }
+svg .s1 { fill: var(--hi); font-weight: 700; } svg .s0 { fill: var(--lo); }
+svg .ink { fill: var(--ink); } svg .mut { fill: var(--muted); }
+svg .wire { stroke: var(--lo); stroke-width: 2; fill: none; }
+svg .wire.live { stroke: var(--hi); }
+svg .box { fill: var(--panel-2); stroke: var(--line); stroke-width: 1.5; }
+svg .box.active { stroke: var(--uc); stroke-width: 2.5; }
+svg .box.idle { stroke-dasharray: 5 4; }
+svg .ubar { fill: var(--uc); }
+svg .warnt { fill: var(--warn); }
+#diagram { width: 100%; min-width: 760px; height: auto; display: block; }
+
+/* ---------- propagation + power */
+.scrub { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.scrub input[type=range] { flex: 1 1 200px; accent-color: var(--hi); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 0.88rem; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.bars { display: grid; gap: 8px; }
+.barrow { display: grid; grid-template-columns: 92px minmax(0, 1fr) 96px; gap: 8px; align-items: center; font-size: 0.85rem; }
+.barrow .track { display: flex; height: 18px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
+.barrow .track i { display: block; height: 100%; background: var(--uc); }
+.barrow .val { font-family: var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--uc); margin-right: 5px; vertical-align: -1px; }
+.saving { font: 700 1.6rem var(--f-display); color: var(--good); }
+.pill { display: inline-block; font: 600 0.75rem var(--f-mono); padding: 3px 7px; border-radius: 99px; background: var(--panel-2); border: 1px solid var(--line); }
+.pill.good { color: var(--good); border-color: var(--good); }
+.pill.bad { color: var(--bad); border-color: var(--bad); }
+.pill.warn { color: var(--warn); border-color: var(--warn); }
+
+#wave { display: block; }
+#wave .slot { cursor: pointer; }
+#wave .slot:hover rect.hit { fill: var(--hi-soft); }
+table.optable { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+table.optable th, table.optable td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.optable th { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+table.optable td.code { font-family: var(--f-mono); }
+table.optable tr { cursor: pointer; }
+table.optable tr:hover td { background: var(--panel-2); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--uc); margin-right: 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (max-width: 520px) {
+  .opgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .barrow { grid-template-columns: 70px minmax(0, 1fr) 80px; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Low-power 8-bit ALU · Cadence Virtuoso project</div>
+      <h1>ALU8 Virtual Lab</h1>
+      <p class="muted small">Flip the input bits and pick an opcode. Every 0 and 1 below comes from simulating the real gate netlist that the Spectre transistor netlist is built from.</p>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <section class="grid2">
+    <!-- INPUTS -->
+    <div class="card">
+      <div class="card-head"><h2>Inputs</h2><span class="eyebrow">bit 7 (MSB) → bit 0 (LSB)</span></div>
+      <div class="operand" id="opA"></div>
+      <div class="operand" id="opB"></div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Opcode OP[3:0]</div>
+        <div class="opgrid" id="opgrid"></div>
+      </div>
+      <div class="controls">
+        <label class="switch"><input type="checkbox" id="iso" checked> Operand isolation (low-power mode)</label>
+        <button class="btn" id="rnd">Random A, B</button>
+        <button class="btn" id="swap">Swap A ↔ B</button>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="card">
+      <div class="card-head"><h2>Result</h2><span class="pill" id="unitPill"></span></div>
+      <div class="op-sentence" id="sentence"></div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Y[7:0]</div>
+        <div class="leds" id="ledY"></div>
+      </div>
+      <div id="yhWrap">
+        <div class="eyebrow" style="margin-bottom:6px">Y_HI[7:0] · upper byte of the product (MUL only)</div>
+        <div class="leds" id="ledYH"></div>
+      </div>
+      <div class="flags" id="flags"></div>
+      <div class="readout" id="readout"></div>
+    </div>
+  </section>
+
+  <!-- HOW THE MATH WAS DONE -->
+  <section class="card">
+    <div class="card-head"><h2 id="detailTitle">How the math was done</h2><span class="eyebrow" id="detailSub"></span></div>
+    <div class="scroll-x" id="detail"></div>
+    <p class="note" id="detailNote"></p>
+  </section>
+
+  <!-- CIRCUIT -->
+  <section class="card">
+    <div class="card-head"><h2>Circuit view</h2><span class="eyebrow">amber = 1 · slate = 0</span></div>
+    <div class="scroll-x"><svg id="diagram" viewBox="0 0 1000 446" role="img" aria-label="ALU block diagram with live bit values"></svg></div>
+    <p class="note">The decoder turns the opcode into one enable per block. With operand isolation on, AND gates hold the inputs of every idle block at 0, so those blocks do not switch and burn no dynamic power. The 4:1 transmission-gate mux then passes the active block's result to Y.</p>
+  </section>
+
+  <section class="grid2">
+    <!-- PROPAGATION -->
+    <div class="card">
+      <div class="card-head"><h2>Signal propagation</h2><span class="eyebrow">unit-delay simulation</span></div>
+      <p class="note">When inputs change, each cell takes one delay to respond. Drag the slider or press play to watch the carry ripple and the outputs settle. Wrong values that flash on the way are glitches, and each glitch costs energy.</p>
+      <div class="scrub">
+        <button class="btn primary" id="play">Play</button>
+        <input type="range" id="step" min="0" max="1" value="1" aria-label="time step">
+        <span class="mono" id="stepLabel"></span>
+      </div>
+      <svg id="spark" viewBox="0 0 520 90" width="100%" height="90" aria-label="toggles per time step"></svg>
+      <dl class="kv" id="propStats"></dl>
+    </div>
+
+    <!-- POWER -->
+    <div class="card">
+      <div class="card-head"><h2>Power: isolation on vs off</h2><span class="eyebrow">30-vector test program</span></div>
+      <div class="scrub">
+        <label class="small muted" for="vdd">VDD</label>
+        <input type="range" id="vdd" min="0.6" max="1.2" step="0.05" value="1.0">
+        <span class="mono" id="vddLabel">1.00 V</span>
+      </div>
+      <div class="bars" id="bars"></div>
+      <div class="legend" id="legend"></div>
+      <div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap">
+        <div><div class="eyebrow">Energy saved by isolation</div><div class="saving" id="saving"></div></div>
+        <p class="note small" id="powerNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WAVEFORMS -->
+  <section class="card">
+    <div class="card-head">
+      <h2>Waveforms · test program</h2>
+      <div class="controls"><button class="btn primary" id="runProg">Run test program</button><span class="pill" id="progPass"></span></div>
+    </div>
+    <p class="note">These are the same 30 vectors the Spectre testbench applies, one every 10 ns. Click any slot to load it into the inputs.</p>
+    <div class="scroll-x"><svg id="wave" height="300"></svg></div>
+  </section>
+
+  <!-- OPCODE TABLE -->
+  <section class="card">
+    <div class="card-head">
+      <h2>Opcode table</h2>
+      <div class="controls"><button class="btn" id="selftest">Self-test 65,536 vectors</button><span class="pill" id="selftestOut">not run</span></div>
+    </div>
+    <div class="scroll-x"><table class="optable" id="optable"></table></div>
+    <p class="note">Flags: <b>C</b> carry out (for SUB, DEC and CMP, 1 means no borrow), <b>Z</b> result is zero, <b>N</b> bit 7 of Y, <b>V</b> signed overflow (for MUL, the product needs more than 8 bits), <b>WE</b> write enable, 0 only for CMP.</p>
+  </section>
+</div>
+
+<script>
+/*@@ENGINE@@*/
+</script>
+<script>
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const id = ALU.id;
+const UNIT_KEYS = ["ctrl", "arith", "mul", "logic", "shift"];
+const UNIT_LABEL = { ctrl: "Control", arith: "Arithmetic", mul: "Multiplier", logic: "Logic", shift: "Shifter" };
+const opUnit = (op) => (op <= 3 || op === 15 ? "arith" : op === 4 ? "mul" : op <= 11 ? "logic" : "shift");
+const MN = (op) => ALU.OPCODES[op][1];
+const bin = (x, n = 8) => x.toString(2).padStart(n, "0");
+const hex = (x, n = 2) => x.toString(16).toUpperCase().padStart(n, "0");
+const s8 = (x) => (x & 0x80 ? x - 256 : x);
+const vbits = (v, prefix, n = 8) => { const r = []; for (let i = n - 1; i >= 0; i--) r.push(v[id[prefix + i]]); return r; };
+const vbyte = (v, prefix) => ALU.byte(v, prefix);
+const span = (b) => `<span class="b${b}">${b}</span>`;
+const tsp = (b) => `<tspan class="s${b}">${b}</tspan>`;
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+const S = { a: 0x2d, b: 0x17, op: 0, iso: true, vdd: 1.0, cur: null, prop: null, step: 0, playing: null, progIdx: -1 };
+S.cur = ALU.evaluate(0, 0, 0, true);
+
+/* ------------------------------------------------ chips */
+const st = ALU.STATS;
+$("#chips").innerHTML = [
+  `<span class="chip"><b>${st.transistors.toLocaleString()}</b> transistors</span>`,
+  `<span class="chip"><b>${st.cells}</b> CMOS cells</span>`,
+  `<span class="chip"><b>16</b> ops · 4-bit opcode</span>`,
+  `<span class="chip">gpdk045 · <b>1.0 V</b></span>`].join("");
+
+/* ------------------------------------------------ input widgets */
+function buildOperand(which) {
+  const el = $("#op" + which);
+  const btns = [];
+  for (let i = 7; i >= 0; i--) btns.push(`<button class="bitbtn" data-op="${which}" data-bit="${i}" aria-pressed="false" aria-label="${which} bit ${i}"><span>0</span><small>${1 << i}</small></button>`);
+  el.innerHTML = `<div class="operand-row"><span class="eyebrow" style="white-space:nowrap">Operand ${which}</span>
+    <div class="numbox"><input id="num${which}" type="number" min="0" max="255" aria-label="${which} decimal">
+    <span class="mono" id="hex${which}"></span><span class="mono" id="sgn${which}"></span></div></div>
+    <div class="bits">${btns.join("")}</div>`;
+  el.querySelectorAll(".bitbtn").forEach((b) => b.addEventListener("click", () => {
+    const k = which.toLowerCase(); S[k] ^= 1 << +b.dataset.bit; commit();
+  }));
+  $("#num" + which).addEventListener("change", (e) => {
+    let x = Math.max(0, Math.min(255, Math.round(+e.target.value || 0)));
+    S[which.toLowerCase()] = x; commit();
+  });
+}
+buildOperand("A"); buildOperand("B");
+
+$("#opgrid").innerHTML = ALU.OPCODES.map(([code, mn], op) =>
+  `<button class="opbtn u-${opUnit(op)}" data-op="${op}" aria-pressed="false"><span class="code">${code}</span><span class="mn">${mn}</span></button>`).join("");
+$("#opgrid").querySelectorAll(".opbtn").forEach((b) => b.addEventListener("click", () => { S.op = +b.dataset.op; commit(); }));
+$("#iso").addEventListener("change", (e) => { S.iso = e.target.checked; commit(); renderPower(); });
+$("#rnd").addEventListener("click", () => { S.a = (Math.random() * 256) | 0; S.b = (Math.random() * 256) | 0; commit(); });
+$("#swap").addEventListener("click", () => { [S.a, S.b] = [S.b, S.a]; commit(); });
+
+function renderInputs() {
+  for (const w of ["A", "B"]) {
+    const x = S[w.toLowerCase()];
+    document.querySelectorAll(`.bitbtn[data-op="${w}"]`).forEach((b) => {
+      const on = (x >> +b.dataset.bit) & 1;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.firstElementChild.textContent = on;
+    });
+    const num = $("#num" + w); if (document.activeElement !== num) num.value = x;
+    $("#hex" + w).textContent = "0x" + hex(x);
+    $("#sgn" + w).textContent = "signed " + s8(x);
+  }
+  const unary = ["INC", "DEC", "NOT", "SHL", "SHR", "ROL"].includes(MN(S.op));
+  $("#opB").classList.toggle("unused", unary);
+  document.querySelectorAll(".opbtn").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.op === S.op ? "true" : "false"));
+  $("#iso").checked = S.iso;
+}
+
+/* ------------------------------------------------ result card */
+function leds(el, bits, dim) {
+  el.innerHTML = bits.map((b, k) => `<div class="led ${b ? "on" : ""} ${dim ? "dim" : ""}" title="bit ${7 - k}">${b}</div>`).join("");
+}
+function sentence(v) {
+  const r = ALU.read(v), a = S.a, b = S.b, m = MN(S.op);
+  const map = {
+    ADD: `${a} + ${b} = ${r.Y}${r.C ? " (+256 carry)" : ""}`, SUB: `${a} − ${b} = ${r.C ? r.Y : r.Y + " (= " + s8(r.Y) + " signed)"}`,
+    INC: `${a} + 1 = ${r.Y}`, DEC: `${a} − 1 = ${r.Y}`, MUL: `${a} × ${b} = ${(r.YH << 8) | r.Y}`,
+    AND: `${bin(a)} AND ${bin(b)}`, OR: `${bin(a)} OR ${bin(b)}`, XOR: `${bin(a)} XOR ${bin(b)}`,
+    NOT: `NOT ${bin(a)}`, NAND: `${bin(a)} NAND ${bin(b)}`, NOR: `${bin(a)} NOR ${bin(b)}`, XNOR: `${bin(a)} XNOR ${bin(b)}`,
+    SHL: `${bin(a)} << 1`, SHR: `${bin(a)} >> 1`, ROL: `rotate-left ${bin(a)}`,
+    CMP: `compare ${a} with ${b}: ${a === b ? "equal" : a > b ? "A is larger" : "A is smaller"}` };
+  return `${m}  ·  ${map[m]}`;
+}
+function renderResult(v) {
+  const r = ALU.read(v), unit = opUnit(S.op), isMul = unit === "mul";
+  $("#sentence").textContent = sentence(v);
+  leds($("#ledY"), vbits(v, "Y"), false);
+  leds($("#ledYH"), vbits(v, "YH"), !isMul);
+  const fl = [["C", "carry"], ["Z", "zero"], ["N", "negative"], ["V", "overflow"], ["WE", "write"]];
+  $("#flags").innerHTML = fl.map(([f, t]) => `<div class="flag"><div class="led ${r[f] ? "on" : ""}">${r[f]}</div><span><b>${f}</b><br>${t}</span></div>`).join("");
+  const pill = $("#unitPill");
+  pill.className = "pill u-" + unit; pill.style.color = "var(--uc)"; pill.style.borderColor = "var(--uc)";
+  pill.textContent = UNIT_LABEL[unit] + " unit";
+  const prod = (r.YH << 8) | r.Y;
+  $("#readout").innerHTML = isMul
+    ? `<span>Product <b>${prod}</b></span><span>hex <b>0x${hex(prod, 4)}</b></span><span>binary <b>${bin(prod, 16)}</b></span>`
+    : `<span>Unsigned <b>${r.Y}</b></span><span>Signed <b>${s8(r.Y)}</b></span><span>Hex <b>0x${hex(r.Y)}</b></span>`;
+}
+
+/* ------------------------------------------------ detail (math) */
+function row(label, bits, dec, cls = "", lead = "") {
+  return `<tr class="${cls}"><td class="lab">${label}</td><td>${lead}</td>${bits.map((b) => `<td>${b === null ? "" : span(b)}</td>`).join("")}<td class="dec">${dec ?? ""}</td></tr>`;
+}
+function head(n, extra = "") {
+  let h = `<tr><th></th><th>${extra}</th>`;
+  for (let i = n - 1; i >= 0; i--) h += `<th>b${i}</th>`;
+  return h + "<th></th></tr>";
+}
+function renderDetail(v) {
+  const unit = opUnit(S.op), m = MN(S.op);
+  const T = $("#detail"), note = $("#detailNote");
+  $("#detailTitle").textContent = "How the math was done · " + UNIT_LABEL[unit];
+  if (unit === "arith") {
+    const a = vbits(v, "ar_a"), bc = vbits(v, "ar_bc"), s = vbits(v, "ar_s");
+    const cin = []; for (let i = 7; i >= 0; i--) cin.push(v[id["ar_c" + i]]);
+    const c8 = v[id.ar_c8];
+    const bLabel = { ADD: "B", SUB: "NOT B", CMP: "NOT B", INC: "0", DEC: "11111111" }[m];
+    const bcv = vbyte(v, "ar_bc");
+    $("#detailSub").textContent = "8 mirror full adders, ripple carry";
+    T.innerHTML = `<table class="cols">${head(8, "C")}
+      ${row("carry in", cin, `c0 = ${v[id.ar_c0]}`)}
+      ${row("A", a, `= ${vbyte(v, "ar_a")}`)}
+      ${row("+ " + bLabel, bc, `= ${bcv}${m === "DEC" ? " (−1)" : ""}`)}
+      ${row("Y", s, `= ${vbyte(v, "ar_s")}  (signed ${s8(vbyte(v, "ar_s"))})`, "sum", span(c8))}</table>`;
+    const notes = {
+      ADD: `Each column adds A, B and the carry from the column to its right. A 1 in the carry row means that column received a carry. <b>C = ${c8}</b> is the carry out of bit 7.`,
+      SUB: `Subtraction reuses the adder: <b>A − B = A + NOT B + 1</b> (two's complement). The XOR gates invert B and the +1 goes in as carry-in c0. <b>C = ${c8}</b> means ${c8 ? "no borrow, A ≥ B" : "a borrow, A < B"}.`,
+      CMP: `CMP runs the same subtraction but WE = 0, so the result is not stored. Only the flags matter: Z = 1 means equal, C = 1 means A ≥ B.`,
+      INC: `INC feeds 0 into the B side and sets carry-in c0 = 1, so the adder computes A + 1.`,
+      DEC: `DEC adds 11111111, which is −1 in two's complement, so the adder computes A − 1. C = 0 only when A was 0 (a borrow).`,
+    };
+    note.innerHTML = notes[m] + (v[id.V] ? ` <b>V = 1</b>: the signed result does not fit in −128…127.` : "");
+  } else if (unit === "mul") {
+    let rows = head(16);
+    const bbits = []; for (let i = 0; i < 8; i++) bbits.push(v[id["mu_b" + i]]);
+    for (let i = 0; i < 8; i++) {
+      const cells = [];
+      for (let col = 15; col >= 0; col--) { const j = col - i; cells.push(j >= 0 && j < 8 ? v[id[`mu_pp${i}_${j}`]] : null); }
+      rows += row(`A × b${i} (b${i}=${bbits[i]})`, cells, bbits[i] ? `= ${vbyte(v, "mu_a")} × ${1 << i}` : "= 0");
+    }
+    const prod = [...vbits(v, "YH"), ...vbits(v, "Y")];
+    const P = (vbyte(v, "YH") << 8) | vbyte(v, "Y");
+    rows += row("product", prod, `= ${P}`, "sum");
+    $("#detailSub").textContent = "8×8 array: 64 AND gates + 56 full adders";
+    T.innerHTML = `<table class="cols">${rows}</table>`;
+    note.innerHTML = `Binary long multiplication. Row <i>i</i> is A when bit b<i>i</i> of B is 1 and zero otherwise, shifted left <i>i</i> places (64 AND gates make these partial products). Seven rows of 8 full adders add them up. The low byte goes to Y and the high byte to Y_HI. <b>C = V = ${v[id.C]}</b> because the product ${v[id.C] ? "needs" : "fits in"} ${v[id.C] ? "more than" : ""} 8 bits.`;
+  } else if (unit === "logic") {
+    const s = (v[id.OP1] << 1) | v[id.OP0];
+    const inv = v[id.nOP3];
+    const rows = [["NOT A", "lg_nota"], ["NAND", "lg_nand"], ["NOR", "lg_nor"], ["XNOR", "lg_xnor"]];
+    T.innerHTML = `<table class="cols">${head(8)}
+      ${row("A", vbits(v, "lg_a"), "")}${row("B", vbits(v, "lg_b"), "")}
+      ${rows.map(([lab, p], k) => row(lab + (k === s ? "  ← mux" : ""), vbits(v, p), "", k === s ? "sel" : "")).join("")}
+      ${row(inv ? "inverted (XOR 1)" : "passed (XOR 0)", vbits(v, "lg_y"), `= ${vbyte(v, "lg_y")}`, "sum")}</table>`;
+    $("#detailSub").textContent = "per bit: NOT, NAND, NOR, XNOR, 4:1 mux, XOR";
+    note.innerHTML = `Every bit computes NOT A, NAND, NOR and XNOR at the same time. OP1 OP0 = <b>${bin(s, 2)}</b> makes the 4:1 mux pick <b>${rows[s][0]}</b>. Because OP3 = ${v[id.OP3]}, the last XOR ${inv ? "inverts it, turning " + rows[s][0] + " into " + m : "passes it through unchanged"}.`;
+  } else {
+    const a = vbits(v, "sh_a"), y = vbits(v, "sh_y");
+    const op0 = v[id.OP0];
+    T.innerHTML = `<table class="cols">${head(8, "C")}${row("A", a, `= ${vbyte(v, "sh_a")}`)}
+      <tr><td class="lab"></td><td></td>${a.map(() => `<td class="muted">${op0 ? "↘" : "↙"}</td>`).join("")}<td></td></tr>
+      ${row("Y", y, `= ${vbyte(v, "sh_y")}`, "sum", span(v[id.sh_c]))}</table>`;
+    $("#detailSub").textContent = "transmission-gate 2:1 mux per bit";
+    const t = { SHL: "Each bit moves one place left, which doubles the number. A 0 enters bit 0 and the old bit 7 drops into C.",
+      SHR: "Each bit moves one place right, which halves the number (rounding down). A 0 enters bit 7 and the old bit 0 drops into C.",
+      ROL: "Like SHL, but the old bit 7 wraps around into bit 0, so no bit is lost. C also gets a copy of the old bit 7." };
+    note.innerHTML = t[m];
+  }
+}
+
+/* ------------------------------------------------ circuit diagram */
+const SVG = $("#diagram");
+function bitsT(bits, cls = "") { return bits.map(tsp).join(""); }
+function renderDiagram(v) {
+  const unit = opUnit(S.op);
+  const en = { arith: v[id.EN_ARITH], mul: v[id.EN_MUL], logic: v[id.EN_LOGIC], shift: v[id.EN_SHIFT] };
+  const tog = S.prop ? S.prop.unitToggles : [0, 0, 0, 0, 0];
+  const rowsDef = [
+    ["arith", "Arithmetic", "ADD SUB INC DEC CMP", "ar_a", "ar_b", "ar_s"],
+    ["mul", "Multiplier 8×8", "MUL", "mu_a", "mu_b", null],
+    ["logic", "Logic", "AND OR XOR NOT NAND NOR XNOR", "lg_a", "lg_b", "lg_y"],
+    ["shift", "Shifter", "SHL SHR ROL", "sh_a", null, "sh_y"]];
+  let g = "";
+  // inputs
+  g += `<text x="16" y="36" class="mut" font-size="12">OP[3:0]</text><text x="16" y="62" class="t-mono" font-size="22">${bitsT(vbits(v, "OP", 4))}</text>`;
+  g += `<text x="16" y="186" class="mut" font-size="12">A[7:0]</text><text x="16" y="210" class="t-mono" font-size="19">${bitsT(vbits(v, "A"))}</text>`;
+  g += `<text x="16" y="276" class="mut" font-size="12">B[7:0]</text><text x="16" y="300" class="t-mono" font-size="19">${bitsT(vbits(v, "B"))}</text>`;
+  // decoder
+  g += `<path class="wire live" d="M86 54 H200"/>`;
+  g += `<rect class="box" x="200" y="16" width="190" height="66" rx="6"/>
+    <text x="214" y="38" class="ink" font-size="14" font-weight="600">Opcode decoder</text>
+    <text x="214" y="64" class="mut t-mono" font-size="12">EN  A M L S = </text>
+    <text x="320" y="64" class="t-mono" font-size="14">${bitsT([en.arith, en.mul, en.logic, en.shift])}</text>`;
+  // input trunk
+  g += `<path class="wire live" d="M150 202 H205 M150 292 H205 M205 124 V418"/>`;
+  rowsDef.forEach(([k, name, ops, pa, pb, py], i) => {
+    const y = 104 + i * 84, active = unit === k, on = en[k];
+    const gated = S.iso && !on;
+    const cls = `u-${k}`;
+    g += `<g class="${cls}">`;
+    g += `<path class="wire ${gated ? "" : "live"}" d="M205 ${y + 34} H234"/>`;
+    // iso box
+    g += `<rect class="box ${active ? "active" : ""}" x="234" y="${y}" width="158" height="68" rx="6"/>
+      <text x="246" y="${y + 18}" class="mut" font-size="11">ISO AND · EN=${on}${S.iso ? "" : " · bypassed"}</text>
+      <text x="246" y="${y + 38}" class="t-mono" font-size="13"><tspan class="mut">a </tspan>${bitsT(vbits(v, pa))}</text>
+      ${pb ? `<text x="246" y="${y + 57}" class="t-mono" font-size="13"><tspan class="mut">b </tspan>${bitsT(vbits(v, pb))}</text>` : `<text x="246" y="${y + 57}" class="mut" font-size="11">(uses A only)</text>`}`;
+    g += `<path class="wire ${gated ? "" : "live"}" d="M392 ${y + 34} H420"/>`;
+    // unit box
+    const idle = !active;
+    g += `<rect class="box ${active ? "active" : "idle"}" x="420" y="${y}" width="290" height="68" rx="6"/>
+      <rect class="ubar" x="420" y="${y}" width="6" height="68" rx="2"/>
+      <text x="438" y="${y + 20}" class="ink" font-size="14" font-weight="600">${name}</text>
+      <text x="438" y="${y + 38}" class="mut" font-size="11">${ops} · ${ALU.STATS.byUnit[k].toLocaleString()} T</text>`;
+    if (k === "mul") {
+      g += `<text x="438" y="${y + 58}" class="t-mono" font-size="12"><tspan class="mut">P </tspan>${bitsT(mulP(v))}</text>`;
+    } else {
+      g += `<text x="438" y="${y + 58}" class="t-mono" font-size="13"><tspan class="mut">out </tspan>${bitsT(vbits(v, py))}</text>`;
+    }
+    const tg = tog[ALU.UNITS.indexOf(k)];
+    const status = active ? "active" : gated ? "isolated · 0 toggles" : `idle but switching · ${tg} toggles`;
+    g += `<text x="700" y="${y + 20}" text-anchor="end" font-size="11" class="${active ? "mut" : gated ? "mut" : "warnt"}">${status}</text>`;
+    g += `<path class="wire ${active ? "live" : ""}" d="M710 ${y + 34} H760"/></g>`;
+  });
+  // mux
+  const s1 = v[id.SEL1], s0 = v[id.SEL0];
+  g += `<rect class="box" x="760" y="104" width="64" height="320" rx="8"/>
+    <text x="792" y="250" text-anchor="middle" class="ink" font-size="14" font-weight="600">4:1</text>
+    <text x="792" y="268" text-anchor="middle" class="ink" font-size="14" font-weight="600">MUX</text>
+    <text x="792" y="296" text-anchor="middle" class="mut" font-size="11">sel</text>
+    <text x="792" y="314" text-anchor="middle" class="t-mono" font-size="14">${bitsT([s1, s0])}</text>`;
+  g += `<path class="wire live" d="M824 200 H846"/>`;
+  // outputs
+  g += `<text x="850" y="150" class="mut" font-size="12">Y[7:0]</text><text x="850" y="174" class="t-mono" font-size="17">${bitsT(vbits(v, "Y"))}</text>`;
+  g += `<text x="850" y="208" class="mut" font-size="12">Y_HI[7:0]</text><text x="850" y="232" class="t-mono" font-size="17">${bitsT(vbits(v, "YH"))}</text>`;
+  const fl = ["C", "Z", "N", "V", "WE"];
+  g += `<text x="850" y="266" class="mut" font-size="12">flags</text>`;
+  fl.forEach((f, k) => {
+    g += `<text x="${858 + k * 28}" y="286" text-anchor="middle" class="mut t-mono" font-size="11">${f}</text>
+          <text x="${858 + k * 28}" y="308" text-anchor="middle" class="t-mono" font-size="17">${tsp(v[id[f]])}</text>`;
+  });
+  g += `<text x="850" y="340" class="mut" font-size="11">Z = NOR of all 16 result bits</text>
+        <text x="850" y="356" class="mut" font-size="11">N = Y7 (0 for MUL)</text>`;
+  SVG.innerHTML = g;
+}
+function mulP(v) {
+  // the multiplier's own 16-bit product (before the output mux): P0..P7 from row sums, P8..15 from last row
+  const P = [];
+  P.push(v[id.mu_pp0_0]);
+  for (let i = 1; i < 8; i++) P.push(v[id[`mu_s${i}_0`]]);
+  for (let j = 1; j < 8; j++) P.push(v[id[`mu_s7_${j}`]]);
+  P.push(v[id.mu_c7_7]);
+  return P.reverse();
+}
+
+/* ------------------------------------------------ propagation */
+function renderProp() {
+  const p = S.prop; if (!p) return;
+  const r = $("#step"); r.max = p.depth; r.value = S.step;
+  $("#stepLabel").textContent = `t = ${S.step} / ${p.depth} cell delays`;
+  const W = 520, H = 90, n = Math.max(p.togglesPerStep.length, 1), max = Math.max(1, ...p.togglesPerStep);
+  const bw = (W - 30) / n;
+  let s = `<line x1="28" y1="${H - 16}" x2="${W}" y2="${H - 16}" stroke="var(--line)"/>`;
+  s += `<text x="0" y="12" font-size="10" fill="var(--muted)">${max}</text><text x="0" y="${H - 18}" font-size="10" fill="var(--muted)">0</text>`;
+  p.togglesPerStep.forEach((t, k) => {
+    const h = (t / max) * (H - 26);
+    s += `<rect x="${30 + k * bw}" y="${H - 16 - h}" width="${Math.max(1, bw - 1)}" height="${h}" fill="${k < S.step ? "var(--hi)" : "var(--lo)"}"/>`;
+  });
+  s += `<text x="30" y="${H - 2}" font-size="10" fill="var(--muted)">toggles per cell-delay step →</text>`;
+  $("#spark").innerHTML = s;
+  const total = p.unitToggles.reduce((x, y) => x + y, 0);
+  let net = 0; const prev = p.snaps[0];
+  for (let i = 0; i < prev.length; i++) if (prev[i] !== p.final[i]) net++;
+  const e = p.unitEnergy.reduce((x, y) => x + y, 0);
+  $("#propStats").innerHTML = `
+    <dt>Settling depth</dt><dd>${p.depth} cell delays ≈ ${(p.depth * 30)} ps at ~30 ps/cell (45 nm estimate)</dd>
+    <dt>Node toggles</dt><dd>${total} (${net} needed, ${total - net} glitches)</dd>
+    <dt>Switching energy</dt><dd>${e.toFixed(1)} fJ for this input change at ${S.vdd.toFixed(2)} V</dd>`;
+}
+$("#step").addEventListener("input", (e) => { stopPlay(); S.step = +e.target.value; showStep(); });
+function showStep() {
+  const p = S.prop; const v = p.snaps[Math.min(S.step, p.snaps.length - 1)];
+  renderResult(v); renderDiagram(v); renderDetail(v); renderProp();
+}
+function stopPlay() { if (S.playing) { clearInterval(S.playing); S.playing = null; $("#play").textContent = "Play"; } }
+$("#play").addEventListener("click", () => {
+  if (S.playing) return stopPlay();
+  if (S.step >= S.prop.depth) S.step = 0;
+  $("#play").textContent = "Pause";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  S.playing = setInterval(() => {
+    S.step++; showStep();
+    if (S.step >= S.prop.depth) stopPlay();
+  }, reduce ? 400 : 160);
+});
+
+/* ------------------------------------------------ power */
+const UNIT_SHOW = ["ctrl", "arith", "mul", "logic", "shift"];
+$("#legend").innerHTML = UNIT_SHOW.map((k) => `<span class="u-${k}">${UNIT_LABEL[k]}</span>`).join("");
+$("#vdd").addEventListener("input", (e) => { S.vdd = +e.target.value; $("#vddLabel").textContent = S.vdd.toFixed(2) + " V"; renderPower(); commit(); });
+function runProgram(iso, vdd) {
+  let st = ALU.evaluate(0, 0, 0, iso);
+  const E = [0, 0, 0, 0, 0];
+  for (const [op, a, b] of ALU.PROGRAM) {
+    const p = ALU.propagate(st, a, b, op, iso, vdd);
+    p.unitEnergy.forEach((x, k) => (E[k] += x));
+    st = p.final;
+  }
+  return E;
+}
+function renderPower() {
+  const on = runProgram(true, S.vdd), off = runProgram(false, S.vdd);
+  const tOn = on.reduce((a, b) => a + b), tOff = off.reduce((a, b) => a + b);
+  const max = Math.max(tOn, tOff);
+  const n = ALU.PROGRAM.length, T = 10e-9;
+  const pw = (e) => (e * 1e-15 / (n * T)) * 1e6; // µW
+  const bar = (E, tot, label) => `<div class="barrow"><span>${label}</span><div class="track">${
+    UNIT_SHOW.map((k, i) => `<i class="u-${k}" style="width:${(E[i] / max) * 100}%" title="${UNIT_LABEL[k]} ${E[i].toFixed(0)} fJ"></i>`).join("")
+  }</div><span class="val">${pw(tot).toFixed(1)} µW</span></div>`;
+  $("#bars").innerHTML = bar(on, tOn, "Isolation on") + bar(off, tOff, "Isolation off");
+  $("#saving").textContent = `${(100 * (1 - tOn / tOff)).toFixed(0)}%`;
+  $("#powerNote").innerHTML = `${(tOn / n).toFixed(0)} fJ vs ${(tOff / n).toFixed(0)} fJ per operation at ${S.vdd.toFixed(2)} V and 100 MHz. Each toggle costs ½·C·V², with C estimated from fan-out. Lowering VDD from 1.0 to 0.8 V cuts energy by 36% (V²). Use the Spectre run for measured numbers.`;
+}
+
+/* ------------------------------------------------ waveforms */
+const PROG_RES = (() => ALU.PROGRAM.map(([op, a, b]) => {
+  const r = ALU.read(ALU.evaluate(a, b, op, true));
+  const ref = ALU.ref(a, b, op);
+  return { op, a, b, r, ok: JSON.stringify(r) === JSON.stringify(ref) };
+}))();
+function renderWave() {
+  const sw = 46, x0 = 64, rh = 24, top = 26;
+  const rows = [["OP", "bus", (d) => MN(d.op)], ["A", "bus", (d) => hex(d.a)], ["B", "bus", (d) => hex(d.b)],
+    ["Y", "bus", (d) => hex(d.r.Y)], ["Y_HI", "bus", (d) => hex(d.r.YH)],
+    ["C", "bit", (d) => d.r.C], ["Z", "bit", (d) => d.r.Z], ["N", "bit", (d) => d.r.N], ["V", "bit", (d) => d.r.V], ["WE", "bit", (d) => d.r.WE]];
+  const n = PROG_RES.length, W = x0 + n * sw + 10, H = top + rows.length * rh + 26;
+  const svg = $("#wave"); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  let s = "";
+  for (let k = 0; k <= n; k += 5) s += `<text x="${x0 + k * sw}" y="14" font-size="10" fill="var(--muted)" class="t-mono">${k * 10}ns</text><line x1="${x0 + k * sw}" y1="18" x2="${x0 + k * sw}" y2="${H - 22}" stroke="var(--line)" stroke-dasharray="2 3"/>`;
+  if (S.progIdx >= 0) s += `<rect x="${x0 + S.progIdx * sw}" y="18" width="${sw}" height="${H - 40}" fill="var(--hi-soft)"/>`;
+  rows.forEach(([name, kind, f], ri) => {
+    const y = top + ri * rh;
+    s += `<text x="4" y="${y + 15}" font-size="12" fill="var(--muted)" class="t-mono">${name}</text>`;
+    if (kind === "bus") {
+      PROG_RES.forEach((d, k) => {
+        const x = x0 + k * sw;
+        s += `<path d="M${x + 3} ${y + 2} H${x + sw - 3} L${x + sw} ${y + 10} L${x + sw - 3} ${y + 18} H${x + 3} L${x} ${y + 10} Z" fill="var(--panel-2)" stroke="var(--lo)"/>
+              <text x="${x + sw / 2}" y="${y + 14}" text-anchor="middle" font-size="10.5" fill="var(--ink)" class="t-mono">${f(d)}</text>`;
+      });
+    } else {
+      let p = "";
+      PROG_RES.forEach((d, k) => {
+        const yy = f(d) ? y + 3 : y + 17, x = x0 + k * sw;
+        p += (k === 0 ? `M${x} ${yy}` : ` V${yy}`) + ` H${x + sw}`;
+      });
+      s += `<path d="${p}" fill="none" stroke="var(--hi)" stroke-width="2"/>`;
+    }
+  });
+  PROG_RES.forEach((d, k) => {
+    const x = x0 + k * sw;
+    s += `<g class="slot" data-k="${k}"><rect class="hit" x="${x}" y="18" width="${sw}" height="${H - 40}" fill="transparent"/>
+          <text x="${x + sw / 2}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${d.ok ? "var(--good)" : "var(--bad)"}">${d.ok ? "✓" : "✗"}</text></g>`;
+  });
+  svg.innerHTML = s;
+  svg.querySelectorAll(".slot").forEach((g) => g.addEventListener("click", () => loadSlot(+g.dataset.k)));
+  const ok = PROG_RES.filter((d) => d.ok).length;
+  const pill = $("#progPass"); pill.textContent = `${ok}/${n} match the golden model`; pill.className = "pill " + (ok === n ? "good" : "bad");
+}
+function loadSlot(k) { const [op, a, b] = ALU.PROGRAM[k]; S.op = op; S.a = a; S.b = b; S.progIdx = k; commit(); }
+let progTimer = null;
+$("#runProg").addEventListener("click", () => {
+  if (progTimer) { clearInterval(progTimer); progTimer = null; $("#runProg").textContent = "Run test program"; return; }
+  let k = 0; $("#runProg").textContent = "Stop";
+  loadSlot(k);
+  progTimer = setInterval(() => {
+    k++;
+    if (k >= ALU.PROGRAM.length) { clearInterval(progTimer); progTimer = null; $("#runProg").textContent = "Run test program"; return; }
+    loadSlot(k);
+  }, 600);
+});
+
+/* ------------------------------------------------ opcode table + self-test */
+const FLAGS_USED = { arith: "C Z N V", mul: "C Z V", logic: "Z N", shift: "C Z N" };
+$("#optable").innerHTML = `<tr><th>OP[3:0]</th><th>Op</th><th>Operation</th><th>Block</th><th>Flags set</th></tr>` +
+  ALU.OPCODES.map(([code, mn, desc], op) => `<tr data-op="${op}" class="u-${opUnit(op)}"><td class="code">${code}</td><td class="code"><b>${mn}</b></td><td>${esc(desc)}</td><td><span class="dot"></span>${UNIT_LABEL[opUnit(op)]}</td><td class="code">${FLAGS_USED[opUnit(op)]}${mn === "CMP" ? " · WE=0" : ""}</td></tr>`).join("");
+$("#optable").querySelectorAll("tr[data-op]").forEach((tr) => tr.addEventListener("click", () => { S.op = +tr.dataset.op; commit(); window.scrollTo({ top: 0, behavior: "smooth" }); }));
+$("#selftest").addEventListener("click", () => {
+  const out = $("#selftestOut"); out.className = "pill"; out.textContent = "running…";
+  let done = 0, bad = 0; const total = 65536;
+  const chunk = () => {
+    for (let k = 0; k < 2048 && done < total; k++, done++) {
+      const op = done & 15, a = (Math.random() * 256) | 0, b = (Math.random() * 256) | 0;
+      const iso = (done >> 4) & 1;
+      if (JSON.stringify(ALU.read(ALU.evaluate(a, b, op, !!iso))) !== JSON.stringify(ALU.ref(a, b, op))) bad++;
+    }
+    out.textContent = `${done.toLocaleString()} / ${total.toLocaleString()}`;
+    if (done < total) setTimeout(chunk, 0);
+    else { out.textContent = bad ? `${bad} mismatches` : `${total.toLocaleString()} / ${total.toLocaleString()} pass`; out.className = "pill " + (bad ? "bad" : "good"); }
+  };
+  chunk();
+});
+
+/* ------------------------------------------------ commit */
+function commit() {
+  stopPlay();
+  S.prop = ALU.propagate(S.cur, S.a, S.b, S.op, S.iso, S.vdd);
+  S.cur = S.prop.final;
+  S.step = S.prop.depth;
+  const pk = ALU.PROGRAM.findIndex(([op, a, b]) => op === S.op && a === S.a && b === S.b);
+  S.progIdx = pk;
+  renderInputs(); renderResult(S.cur); renderDetail(S.cur); renderDiagram(S.cur); renderProp(); renderWave();
+}
+commit();
+renderPower();
+})();
+</script>

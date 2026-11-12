@@ -1,0 +1,546 @@
+<title>Low-Power 8-Bit ALU</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/*@@LAB_CSS@@*/
+
+/* ================= site layer ================= */
+/* Layout: a project site with a sticky instrument-style nav; each section is a hash-routed view. */
+[hidden] { display: none !important; }
+body { margin: 0; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--panel); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--panel); border-bottom: 1px solid var(--line); }
+.nav-in { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; gap: 16px;
+  padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.brand { display: flex; align-items: center; gap: 8px; font: 700 1.05rem var(--f-display); color: var(--ink); text-decoration: none; white-space: nowrap; }
+.brand .mark { font: 700 0.72rem var(--f-mono); padding: 4px 6px; border-radius: 4px; background: var(--hi); color: var(--panel); letter-spacing: 0.04em; }
+.nav-links { display: flex; gap: 2px; overflow-x: auto; min-width: 0; scrollbar-width: thin; }
+.nav-links a { font: 500 0.88rem var(--f-body); color: var(--muted); text-decoration: none; padding: 7px 10px; border-radius: 5px; white-space: nowrap; }
+.nav-links a:hover { color: var(--ink); background: var(--panel-2); }
+.nav-links a[aria-current="page"] { color: var(--ink); background: var(--hi-soft); box-shadow: inset 0 -2px 0 var(--hi); }
+.nav-links a:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.prose { max-width: 72ch; display: grid; gap: 12px; }
+.prose p, .prose li { font-size: 1rem; line-height: 1.65; }
+.prose ul, .prose ol { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.prose h3 { font-size: 1.05rem; margin-top: 6px; }
+.prose code, .prose kbd { font: 0.88em var(--f-mono); background: var(--panel-2); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+a { color: var(--accent); }
+.lead { font-size: 1.12rem; line-height: 1.6; color: var(--ink); max-width: 64ch; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 24px; align-items: center; padding-block: 12px; }
+@media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+.hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.05; }
+.hero h1 em { font-style: normal; color: var(--hi); }
+.hero .ctas { display: flex; flex-wrap: wrap; gap: 8px; }
+a.btn { display: inline-block; text-decoration: none; font: 600 0.9rem var(--f-body); padding: 9px 14px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); }
+a.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.ticker { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 10px; }
+.ticker .row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; font: 600 1.15rem var(--f-mono); }
+.ticker .row .lab { font: 500 0.75rem var(--f-mono); color: var(--muted); }
+.ticker .row .dec { font: 500 0.9rem var(--f-mono); color: var(--muted); text-align: right; }
+.ticker .rule { border-top: 2px solid var(--ink); }
+.ticker .op { font: 700 0.8rem var(--f-mono); color: var(--hi); letter-spacing: 0.05em; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 2px; }
+.stat b { font: 700 1.6rem var(--f-display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.82rem; color: var(--muted); }
+.cards3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .cards3 { grid-template-columns: minmax(0, 1fr); } }
+a.go { display: grid; gap: 6px; text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+a.go:hover { border-color: var(--accent); }
+a.go h3 { font-size: 1rem; }
+a.go p { font-size: 0.9rem; color: var(--muted); }
+a.go .arrow { font: 600 0.85rem var(--f-body); color: var(--accent); }
+
+table.data { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+table.data th, table.data td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.data th { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+table.data td.m, table.data th.m { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.data input { width: 74px; font: 0.85rem var(--f-mono); padding: 3px 5px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel-2); color: var(--ink); }
+
+/* code */
+.code { position: relative; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+.code pre { margin: 0; padding: 12px 14px; overflow-x: auto; font: 0.82rem/1.55 var(--f-mono); color: var(--ink); }
+.code .copy { position: absolute; top: 6px; right: 6px; font: 600 0.72rem var(--f-body); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; }
+.code.tall pre { max-height: 560px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button { font: 600 0.82rem var(--f-mono); padding: 6px 10px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--hi-soft); border-color: var(--hi); color: var(--ink); }
+
+/* steps */
+ol.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; counter-reset: s; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; }
+ol.steps > li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 700 0.9rem var(--f-mono); background: var(--hi-soft); color: var(--hi); border: 1px solid var(--hi); }
+ol.steps > li > div { display: grid; gap: 8px; min-width: 0; }
+.blocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 800px) { .blocks { grid-template-columns: minmax(0, 1fr); } }
+.block { border: 1px solid var(--line); border-left: 4px solid var(--uc); border-radius: 6px; padding: 12px 14px; background: var(--panel); display: grid; gap: 6px; }
+.block h3 { font-size: 1rem; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.block h3 span { font: 500 0.75rem var(--f-mono); color: var(--muted); }
+.block p { font-size: 0.9rem; }
+.cellgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.cell { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--panel); display: grid; gap: 6px; }
+.cell svg { width: 100%; height: auto; max-height: 260px; }
+.cell h3 { font-size: 0.95rem; display: flex; justify-content: space-between; }
+.cell h3 span { font: 500 0.75rem var(--f-mono); color: var(--muted); }
+.cell p { font-size: 0.84rem; color: var(--muted); }
+svg .w { stroke: var(--ink); stroke-width: 1.6; fill: none; }
+svg .w2 { stroke: var(--ink); stroke-width: 2.6; fill: none; }
+svg .bub { stroke: var(--ink); stroke-width: 1.6; fill: var(--panel); }
+svg .gl { font: 600 12px var(--f-mono); fill: var(--accent); }
+svg .nl { font: 500 11px var(--f-mono); fill: var(--muted); }
+svg .on .w, svg .on .w2 { stroke: var(--hi); }
+svg .pathon { stroke: var(--hi); stroke-width: 3; fill: none; }
+svg .boxs { fill: var(--panel-2); stroke: var(--line); stroke-width: 1.4; }
+svg .ink { fill: var(--ink); }
+
+/*@@LEARN_CSS@@*/
+</style>
+
+<nav class="nav" aria-label="Site">
+  <div class="nav-in">
+    <a class="brand" href="#overview"><span class="mark">ALU8</span><span>Low-Power ALU</span></a>
+    <div class="nav-links" id="navlinks">
+      <a href="#overview">Overview</a>
+      <a href="#start">Start here</a>
+      <a href="#lab">Virtual lab</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#cadence">Cadence flow</a>
+      <a href="#results">Results</a>
+      <a href="#netlists">Netlists</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ======================= OVERVIEW ======================= -->
+<main id="v-overview" class="view wrap">
+  <section class="hero">
+    <div style="display:grid;gap:14px">
+      <div class="eyebrow">VLSI mini-project · Cadence Virtuoso · gpdk045</div>
+      <h1>Design and simulation of a <em>low-power</em> 8-bit ALU</h1>
+      <p class="lead">An arithmetic logic unit is the part of a processor that does the math. This one adds, subtracts, multiplies, compares, shifts and runs logic operations on two 8-bit numbers. It is built from 3,738 transistors, and idle blocks are switched off at their inputs to save power.</p>
+      <div class="ctas"><a class="btn primary" href="#start">New to this? Start here</a><a class="btn" href="#lab">Open the virtual lab</a><a class="btn" href="#cadence">Run it in Cadence</a><a class="btn" href="https://github.com/Afzalkhan001/low-power-8bit-ALU" target="_blank" rel="noopener">Source on GitHub</a></div>
+    </div>
+    <div class="ticker" aria-live="polite">
+      <div style="display:flex;justify-content:space-between"><span class="eyebrow">Live from the gate netlist</span><span class="op" id="tkOp"></span></div>
+      <div id="tk"></div>
+      <p class="small muted" id="tkNote"></p>
+    </div>
+  </section>
+
+  <section class="stats" id="stats"></section>
+
+  <section class="card">
+    <h2>Abstract</h2>
+    <div class="prose">
+      <p>This project designs an 8-bit arithmetic logic unit (ALU) at transistor level in CMOS and simulates it with Cadence Spectre using the 45 nm Generic PDK (gpdk045). The ALU takes two 8-bit operands, A and B, and a 4-bit opcode. It performs 16 operations: addition, subtraction, increment, decrement, 8×8 multiplication with a 16-bit product, comparison, seven bitwise logic operations, two shifts and a rotate. It produces carry, zero, negative and overflow flags.</p>
+      <p>The datapath uses 28-transistor mirror full adders in a ripple-carry chain, an array multiplier, and transmission-gate multiplexers. To lower power, the design uses <b>operand isolation</b>: the opcode decoder enables one functional block at a time, and AND gates hold the inputs of the idle blocks at zero so they do not switch. Other techniques are minimum-size devices, gated control signals and supply-voltage scaling. Each block has its own supply rail so its power can be measured separately.</p>
+      <p>The circuit was checked exhaustively at gate level (16 operations × 65,536 operand pairs) and at switch level on the full transistor netlist. A browser-based virtual lab shows every internal bit, how signals propagate, and the estimated energy saved by isolation.</p>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>Objectives</h2>
+      <div class="prose"><ol>
+        <li>Design a 16-operation, 8-bit ALU from CMOS transistors.</li>
+        <li>Lower dynamic power with operand isolation, small devices and voltage scaling.</li>
+        <li>Simulate it in Cadence Spectre and check every operation against a golden model.</li>
+        <li>Measure delay, average power per block and energy per operation.</li>
+        <li>Compare the design with isolation on and off, and at 1.0 V and 0.8 V.</li>
+      </ol></div>
+    </div>
+    <div class="card">
+      <h2>Specification</h2>
+      <div class="scroll-x"><table class="data">
+        <tr><th>Item</th><th>Value</th></tr>
+        <tr><td>Technology</td><td class="m">gpdk045, L = 45 nm</td></tr>
+        <tr><td>Supply</td><td class="m">1.0 V (0.8 V low-power corner)</td></tr>
+        <tr><td>Inputs</td><td class="m">A[7:0], B[7:0], OP[3:0]</td></tr>
+        <tr><td>Outputs</td><td class="m">Y[7:0], Y_HI[7:0], C Z N V WE</td></tr>
+        <tr><td>Size</td><td class="m">341 cells · 3,738 transistors</td></tr>
+        <tr><td>Device sizes</td><td class="m">Wn = 120 nm, Wp = 240 nm</td></tr>
+        <tr><td>Test program</td><td class="m">30 vectors × 10 ns</td></tr>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="cards3">
+    <a class="go" href="#start"><h3>Start here</h3><p>Binary numbers, gates, transistors, power and Cadence, explained from zero with small demos you can click.</p><span class="arrow">Learn the basics →</span></a>
+    <a class="go" href="#architecture"><h3>Architecture</h3><p>The blocks, the cell library with transistor diagrams, and the decoder equations.</p><span class="arrow">See the design →</span></a>
+    <a class="go" href="#results"><h3>Results</h3><p>What has been verified, the expected output table and a sheet for your Spectre measurements.</p><span class="arrow">Check results →</span></a>
+  </section>
+</main>
+
+<!-- ======================= START HERE ======================= -->
+<main id="v-start" class="view wrap" hidden>
+<!--@@LEARN@@-->
+</main>
+
+<!-- ======================= LAB ======================= -->
+<div id="v-lab" class="view" hidden>
+<!--@@LAB_BODY@@-->
+</div>
+
+<!-- ======================= ARCHITECTURE ======================= -->
+<main id="v-architecture" class="view wrap" hidden>
+  <header class="top"><div><div class="eyebrow">How it is built</div><h1>Architecture</h1></div></header>
+  <section class="card">
+    <h2>Block diagram</h2>
+    <div class="scroll-x"><svg id="archsvg" viewBox="0 0 980 360" style="width:100%;min-width:720px;height:auto" role="img" aria-label="ALU block diagram"></svg></div>
+    <p class="note">One opcode selects one block. The decoder raises that block's enable, the isolation AND gates let operands through only to that block, and the output mux picks its result.</p>
+  </section>
+  <section class="card">
+    <h2>Blocks</h2>
+    <div class="blocks" id="blocks"></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Cell library</h2><span class="eyebrow">every cell in cells.scs</span></div>
+    <div class="cellgrid" id="cellgrid"></div>
+    <div class="scroll-x"><table class="data" id="celltable"></table></div>
+  </section>
+  <section class="card">
+    <h2>Decoder and control equations</h2>
+    <div class="code"><button class="copy">Copy</button><pre id="eqs"></pre></div>
+  </section>
+</main>
+
+<!-- ======================= CADENCE ======================= -->
+<main id="v-cadence" class="view wrap" hidden>
+  <header class="top"><div><div class="eyebrow">From netlist to waveforms</div><h1>Cadence flow</h1>
+    <p class="muted small">Do these steps on the Linux machine that has Cadence Virtuoso and Spectre.</p></div></header>
+  <section class="card">
+    <ol class="steps" id="cadsteps"></ol>
+  </section>
+  <section class="card">
+    <h2>Measurements</h2>
+    <div class="scroll-x"><table class="data">
+      <tr><th>Quantity</th><th>How to measure</th></tr>
+      <tr><td>Functional check</td><td>Sample each output at (k+1)·10 ns − 1 ns and compare with the expected table on the Results page.</td></tr>
+      <tr><td>Worst-case adder delay</td><td>Vector 1, ADD FF + 01: the carry ripples through all 8 adders. Delay from the input edge at 10 ns to Z rising, at VDD/2.</td></tr>
+      <tr><td>Multiplier delay</td><td>Vector 11, MUL FF × FF: input edge at 110 ns until the last Y_HI bit settles.</td></tr>
+      <tr><td>Power per block</td><td class="m">-average(IT("/Varith/PLUS")) * vdd</td></tr>
+      <tr><td>Energy per operation</td><td>Total power × 10 ns</td></tr>
+      <tr><td>Isolation saving</td><td>Run with isooff = 0 and 1. Saving = 1 − P(on) / P(off)</td></tr>
+      <tr><td>Voltage scaling</td><td>Parametric sweep vdd = 0.8, 0.9, 1.0. The functional table must still pass.</td></tr>
+    </table></div>
+  </section>
+  <section class="card">
+    <h2>Troubleshooting</h2>
+    <div class="scroll-x"><table class="data">
+      <tr><th>Problem</th><th>Fix</th></tr>
+      <tr><td class="m">model g45n1svt not found</td><td>The model or section name differs in your PDK. Check it (step 2) and regenerate with --nmos, --pmos and --section.</td></tr>
+      <tr><td>Outputs stuck at mid-rail</td><td>A cell's vdd or vss pin is not connected, or a pmos bulk is not tied to vdd.</td></tr>
+      <tr><td>Wrong result only at high speed</td><td>Increase the 10 ns period (T_PERIOD_NS in gen_netlist.py). The multiplier is the slowest block.</td></tr>
+      <tr><td>Convergence warnings</td><td>Use errpreset=conservative, or add gmin=1e-12 to simulatorOptions.</td></tr>
+    </table></div>
+  </section>
+</main>
+
+<!-- ======================= RESULTS ======================= -->
+<main id="v-results" class="view wrap" hidden>
+  <header class="top"><div><div class="eyebrow">What is proven and what is left</div><h1>Results</h1></div></header>
+  <section class="card">
+    <h2>Verification</h2>
+    <div class="scroll-x"><table class="data">
+      <tr><th>Check</th><th>Scope</th><th>Result</th></tr>
+      <tr><td>Gate-level structure vs integer math</td><td>16 ops × 65,536 operand pairs × isolation on/off</td><td><span class="pill good">PASS · 0 mismatches</span></td></tr>
+      <tr><td>Transistor netlist, switch-level</td><td>3,738 MOSFETs, 30 vectors × isolation on/off</td><td><span class="pill good">PASS · 60/60</span></td></tr>
+      <tr><td>Web simulator engine vs Python model</td><td>3,184 vectors + unit-delay settling</td><td><span class="pill good">PASS</span></td></tr>
+      <tr><td>Spectre transient: delay and power</td><td>tb_alu8.scs and tb_alu8_noiso.scs</td><td><span class="pill warn">To run on Cadence</span></td></tr>
+    </table></div>
+  </section>
+  <section class="grid2">
+    <div class="card">
+      <h2>Estimated energy: isolation on vs off</h2>
+      <p class="note">From the gate netlist, counting every node toggle (glitches included) over the 30-vector program at 1.0 V. Each toggle costs ½·C·V², with C estimated from fan-out. Spectre gives the measured value.</p>
+      <div class="bars" id="rbars"></div>
+      <div class="legend" id="rlegend"></div>
+    </div>
+    <div class="card">
+      <h2>Your Spectre measurements</h2>
+      <p class="note">Type your numbers after the run. They stay in this browser only. Copy the table into your report.</p>
+      <div class="scroll-x"><table class="data" id="meas"></table></div>
+      <div class="controls"><button class="btn" id="copyMeas">Copy as table</button><span class="small muted" id="copyMsg"></span></div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>Expected outputs</h2>
+    <p class="note">Golden-model values for the 30 test vectors. Each one is held for 10 ns.</p>
+    <div class="scroll-x"><table class="data" id="exptable"></table></div>
+  </section>
+  <section class="card">
+    <h2>Low-power techniques</h2>
+    <div class="blocks" id="lptech"></div>
+  </section>
+</main>
+
+<!-- ======================= NETLISTS ======================= -->
+<main id="v-netlists" class="view wrap" hidden>
+  <header class="top"><div><div class="eyebrow">Generated files</div><h1>Netlists</h1>
+    <p class="muted small">Copy a file and save it under the name on its tab, or take the files from the project's virtuoso folder.</p></div></header>
+  <section class="card">
+    <div class="tabs" role="tablist" id="ftabs"></div>
+    <p class="note" id="fdesc"></p>
+    <div class="code tall"><button class="copy" id="fcopy">Copy</button><pre id="fcode"></pre></div>
+  </section>
+</main>
+
+<script>
+/*@@ENGINE@@*/
+</script>
+<script>
+/*@@LAB_JS@@*/
+</script>
+<script>
+const SITE_FILES = /*@@FILES@@*/ {};
+</script>
+<script>
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const bin = (x, n = 8) => x.toString(2).padStart(n, "0");
+const hex = (x, n = 2) => x.toString(16).toUpperCase().padStart(n, "0");
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const bitsHTML = (s) => [...s].map((c) => `<span class="b${c}">${c}</span>`).join("");
+const UNIT_LABEL = { ctrl: "Control", arith: "Arithmetic", mul: "Multiplier", logic: "Logic", shift: "Shifter" };
+
+/* ---------------- copy buttons */
+function copyText(text, btn) {
+  const done = (ok) => { if (btn) { const t = btn.textContent; btn.textContent = ok ? "Copied" : "Select and copy"; setTimeout(() => (btn.textContent = t), 1400); } };
+  try { navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".code .copy");
+  if (b) copyText(b.parentElement.querySelector("pre").textContent, b);
+});
+
+/* ---------------- routing */
+const VIEWS = ["overview", "start", "lab", "architecture", "cadence", "results", "netlists"];
+function route() {
+  const h = location.hash.replace("#", "");
+  let v = VIEWS.includes(h) ? h : null;
+  let anchor = null;
+  if (!v && h.startsWith("ch")) { v = "start"; anchor = h; }
+  v = v || "overview";
+  VIEWS.forEach((k) => ($("#v-" + k).hidden = k !== v));
+  document.querySelectorAll("#navlinks a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + v ? "page" : "false"));
+  const cur = document.querySelector(`#navlinks a[href="#${v}"]`);
+  if (cur) cur.scrollIntoView({ block: "nearest", inline: "nearest" });
+  if (anchor && document.getElementById(anchor)) document.getElementById(anchor).scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+
+/* ---------------- overview: ticker + stats */
+const tkVecs = ALU.PROGRAM;
+let tkI = 0;
+function tick() {
+  const [op, a, b] = tkVecs[tkI % tkVecs.length]; tkI++;
+  const r = ALU.read(ALU.evaluate(a, b, op, true));
+  const mn = ALU.OPCODES[op][1];
+  const unary = ["INC", "DEC", "NOT", "SHL", "SHR", "ROL"].includes(mn);
+  const sym = { ADD: "+", SUB: "−", CMP: "−", MUL: "×", AND: "AND", OR: "OR", XOR: "XOR", NAND: "NAND", NOR: "NOR", XNOR: "XNOR" }[mn] || "";
+  const res = mn === "MUL" ? bin((r.YH << 8) | r.Y, 16) : bin(r.Y);
+  const resDec = mn === "MUL" ? (r.YH << 8) | r.Y : r.Y;
+  $("#tkOp").textContent = `OP ${ALU.OPCODES[op][0]} · ${mn}`;
+  $("#tk").innerHTML = `
+    <div class="row"><span class="lab">A</span><span>${bitsHTML(bin(a))}</span><span class="dec">${a}</span></div>
+    ${unary ? "" : `<div class="row"><span class="lab">${esc(sym)} B</span><span>${bitsHTML(bin(b))}</span><span class="dec">${b}</span></div>`}
+    <div class="rule"></div>
+    <div class="row"><span class="lab">Y</span><span style="overflow-wrap:anywhere">${bitsHTML(res)}</span><span class="dec">${resDec}</span></div>
+    <div class="row"><span class="lab">flags</span><span class="small">C ${r.C} · Z ${r.Z} · N ${r.N} · V ${r.V}</span><span></span></div>`;
+  $("#tkNote").textContent = `${ALU.OPCODES[op][2]}. Computed by the same ${ALU.STATS.cells} cells that are in the Spectre netlist.`;
+}
+tick();
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => { if (!$("#v-overview").hidden && !document.hidden) tick(); }, 2600);
+$("#stats").innerHTML = [
+  [ALU.STATS.transistors.toLocaleString(), "transistors"], ["16", "operations, 4-bit opcode"],
+  ["1,048,576", "test cases, 0 mismatches"], [estSaving() + "%", "less switching energy with isolation (estimate)"]]
+  .map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+function progEnergy(iso, vdd = 1.0) {
+  let st = ALU.evaluate(0, 0, 0, iso); const E = [0, 0, 0, 0, 0];
+  for (const [op, a, b] of ALU.PROGRAM) { const p = ALU.propagate(st, a, b, op, iso, vdd); p.unitEnergy.forEach((x, k) => (E[k] += x)); st = p.final; }
+  return E;
+}
+function estSaving() { const on = progEnergy(true).reduce((a, b) => a + b), off = progEnergy(false).reduce((a, b) => a + b); return Math.round(100 * (1 - on / off)); }
+
+/* ---------------- architecture */
+(function arch() {
+  const U = (k) => `var(--u-${k})`;
+  let s = "";
+  const box = (x, y, w, h, k, t1, t2) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" class="boxs" style="stroke:${U(k)};stroke-width:2"/>
+    <text x="${x + 12}" y="${y + 22}" class="ink" font-size="14" font-weight="600" font-family="var(--f-body)">${t1}</text>
+    <text x="${x + 12}" y="${y + 40}" class="nl">${t2}</text>`;
+  s += `<text x="10" y="40" class="nl">OP[3:0]</text><text x="10" y="196" class="nl">A[7:0]</text><text x="10" y="236" class="nl">B[7:0]</text>`;
+  s += `<path class="w" d="M60 36 H150 M60 192 H150 M60 232 H150 M150 80 V330"/>`;
+  s += box(150, 8, 300, 56, "ctrl", "Opcode decoder", "→ EN_ARITH  EN_MUL  EN_LOGIC  EN_SHIFT");
+  const rows = [["arith", "Arithmetic", "8 × mirror FA · ripple carry"], ["mul", "Multiplier", "64 AND + 56 FA array"], ["logic", "Logic", "NOT/NAND/NOR/XNOR + mux"], ["shift", "Shifter", "TG mux per bit"]];
+  rows.forEach(([k, t, d], i) => {
+    const y = 84 + i * 66;
+    s += `<path class="w" d="M150 ${y + 26} H200"/>`;
+    s += box(200, y, 150, 52, "ctrl", "Isolation", "A·EN, B·EN");
+    s += `<path class="w" d="M350 ${y + 26} H400"/>`;
+    s += box(400, y, 260, 52, k, t, d);
+    s += `<path class="w" d="M660 ${y + 26} H720"/>`;
+  });
+  s += `<path class="w" d="M250 64 V84" stroke-dasharray="3 3"/>`;
+  s += `<rect x="720" y="84" width="70" height="250" rx="8" class="boxs"/><text x="755" y="205" text-anchor="middle" class="ink" font-size="14" font-weight="600">4:1</text><text x="755" y="222" text-anchor="middle" class="ink" font-size="14" font-weight="600">MUX</text>`;
+  s += `<path class="w" d="M790 200 H830 M660 176 H700 V60 H830"/>`;
+  s += `<text x="836" y="64" class="nl">Y_HI[7:0] (MUL)</text><text x="836" y="204" class="nl">Y[7:0]</text>`;
+  s += box(830, 230, 140, 70, "ctrl", "Flags", "C Z N V · WE");
+  $("#archsvg").innerHTML = s;
+
+  const T = ALU.STATS.byUnit;
+  const blocks = [
+    ["ctrl", "Decoder and isolation", null, "The decoder turns OP[3:0] into four one-hot enables and WE. Isolation AND gates pass A and B only into the enabled block. ISO_OFF = 1 bypasses them for the power comparison."],
+    ["ctrl", "Output mux and flags", null, `A 4:1 transmission-gate mux per bit picks the active block's result. Z is a NOR tree over all 16 result bits. N = Y7, forced to 0 for MUL. Together with the decoder and isolation this is ${T.ctrl.toLocaleString()} transistors.`],
+    ["arith", "Arithmetic unit", T.arith, "Per bit: B is ANDed with PASS (0 for INC/DEC), then XORed with INV (1 for SUB/DEC/CMP), then added in a 28T mirror full adder. Carry-in is 1 for SUB, INC and CMP. V = c8 XOR c7."],
+    ["mul", "8×8 array multiplier", T.mul, "64 AND gates make the partial products a(j)·b(i). Seven rows of 8 full adders add them row by row. The 16-bit product goes to Y (low byte) and Y_HI (high byte). C = V = (Y_HI ≠ 0)."],
+    ["logic", "Logic unit", T.logic, "Each bit computes NOT A, NAND, NOR and XNOR. OP1 OP0 drive a 4:1 mux, and an XOR with NOT OP3 inverts the choice to give AND, OR and XOR. Seven operations come from four gates."],
+    ["shift", "Shifter", T.shift, "One 2:1 transmission-gate mux per bit picks the left or right neighbour (OP0). For ROL, fill = OP1·A7 wraps bit 7 into bit 0. C takes the bit that falls off."],
+  ];
+  $("#blocks").innerHTML = blocks.map(([k, t, n, d]) => `<div class="block u-${k}"><h3>${t}<span>${n ? n.toLocaleString() + " transistors" : "control"}</span></h3><p>${d}</p></div>`).join("");
+
+  // transistor drawing helpers
+  const mos = (x, y, p, g) => `<line x1="${x}" y1="${y - 24}" x2="${x}" y2="${y - 12}" class="w"/><line x1="${x}" y1="${y + 12}" x2="${x}" y2="${y + 24}" class="w"/>
+    <line x1="${x}" y1="${y - 12}" x2="${x - 10}" y2="${y - 12}" class="w"/><line x1="${x}" y1="${y + 12}" x2="${x - 10}" y2="${y + 12}" class="w"/>
+    <line x1="${x - 10}" y1="${y - 15}" x2="${x - 10}" y2="${y + 15}" class="w2"/><line x1="${x - 16}" y1="${y - 15}" x2="${x - 16}" y2="${y + 15}" class="w2"/>
+    ${p ? `<circle cx="${x - 21}" cy="${y}" r="4" class="bub"/>` : ""}<line x1="${x - (p ? 25 : 16)}" y1="${y}" x2="${x - 38}" y2="${y}" class="w"/>
+    <text x="${x - 42}" y="${y + 4}" text-anchor="end" class="gl">${g}</text>`;
+  const rail = (x1, x2, y, lab) => `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="w2"/><text x="${x2 + 4}" y="${y + 4}" class="nl">${lab}</text>`;
+  const out = (x, y, x2, lab) => `<line x1="${x}" y1="${y}" x2="${x2}" y2="${y}" class="w"/><circle cx="${x}" cy="${y}" r="3" class="ink"/><text x="${x2 + 4}" y="${y + 4}" class="gl" style="fill:var(--hi)">${lab}</text>`;
+  window.SCHEM = { mos, rail, out };
+  const cells = [
+    ["INV", 2, "Output is the opposite of the input. pmos pulls up when a = 0, nmos pulls down when a = 1.",
+      `<svg viewBox="0 0 200 210">${rail(70, 150, 20, "VDD")}<line x1="110" y1="20" x2="110" y2="42" class="w"/>${mos(110, 66, true, "a")}<line x1="110" y1="90" x2="110" y2="126" class="w"/>${out(110, 108, 160, "y")}${mos(110, 150, false, "a")}<line x1="110" y1="174" x2="110" y2="190" class="w"/>${rail(70, 150, 190, "GND")}</svg>`],
+    ["NAND2", 4, "Two pmos in parallel, two nmos in series. Output is 0 only when a and b are both 1.",
+      `<svg viewBox="0 0 220 250">${rail(50, 180, 20, "VDD")}<path d="M80 20 V42 M150 20 V42" class="w"/>${mos(80, 66, true, "a")}${mos(150, 66, true, "b")}<path d="M80 90 V104 H150 V90 M115 104 V122" class="w"/>${out(150, 104, 190, "y")}${mos(115, 146, false, "a")}${mos(115, 194, false, "b")}<line x1="115" y1="218" x2="115" y2="232" class="w"/>${rail(60, 170, 232, "GND")}</svg>`],
+    ["NOR2", 4, "Two pmos in series, two nmos in parallel. Output is 1 only when a and b are both 0.",
+      `<svg viewBox="0 0 220 260">${rail(60, 170, 18, "VDD")}<line x1="115" y1="18" x2="115" y2="34" class="w"/>${mos(115, 58, true, "a")}${mos(115, 106, true, "b")}<path d="M115 130 V150 M80 150 H150 M80 150 V164 M150 150 V164" class="w"/>${out(150, 150, 190, "y")}${mos(80, 188, false, "a")}${mos(150, 188, false, "b")}<path d="M80 212 V236 M150 212 V236" class="w"/>${rail(50, 180, 236, "GND")}</svg>`],
+    ["TG MUX2", 6, "Two transmission gates (an nmos and a pmos side by side) act as switches. sel = 0 connects d0 to y; sel = 1 connects d1.",
+      `<svg viewBox="0 0 230 170"><text x="8" y="48" class="gl">d0</text><text x="8" y="128" class="gl">d1</text><path d="M30 44 H70 M30 124 H70 M150 44 H180 V124 H150 M180 84 H200" class="w"/>
+      <rect x="70" y="28" width="80" height="32" rx="5" class="boxs"/><text x="110" y="48" text-anchor="middle" class="nl">TG</text><text x="110" y="22" text-anchor="middle" class="nl">n: sel̄  p: sel</text>
+      <rect x="70" y="108" width="80" height="32" rx="5" class="boxs"/><text x="110" y="128" text-anchor="middle" class="nl">TG</text><text x="110" y="156" text-anchor="middle" class="nl">n: sel  p: sel̄</text>${out(180, 84, 200, "y")}</svg>`],
+    ["Mirror FA", 28, "Carry stage: c̄ = NOT(ab + c·(a+b)). Sum stage: s̄ = NOT(abc + c̄·(a+b+c)). The pull-up is a mirror copy of the pull-down. Two inverters restore Cout and S.",
+      `<svg viewBox="0 0 270 200"><rect x="6" y="20" width="160" height="70" rx="6" class="boxs"/><text x="16" y="42" class="ink" font-size="12" font-weight="600">carry stage, 10T</text><text x="16" y="60" class="nl">(a‖b)–c  ‖  a–b</text><text x="16" y="78" class="nl">output c̄</text>
+      <rect x="6" y="110" width="160" height="70" rx="6" class="boxs"/><text x="16" y="132" class="ink" font-size="12" font-weight="600">sum stage, 14T</text><text x="16" y="150" class="nl">(a‖b‖c)–c̄  ‖  a–b–c</text><text x="16" y="168" class="nl">output s̄</text>
+      <path d="M166 55 H184 M166 145 H184 M86 90 V110" class="w"/><rect x="184" y="40" width="36" height="30" rx="4" class="boxs"/><text x="202" y="59" text-anchor="middle" class="nl">INV</text><rect x="184" y="130" width="36" height="30" rx="4" class="boxs"/><text x="202" y="149" text-anchor="middle" class="nl">INV</text>
+      <path d="M220 55 H232 M220 145 H232" class="w"/><text x="235" y="59" class="gl" style="fill:var(--hi)">Cout</text><text x="235" y="149" class="gl" style="fill:var(--hi)">S</text></svg>`],
+  ];
+  $("#cellgrid").innerHTML = cells.map(([n, t, d, svg]) => `<div class="cell"><h3>${n}<span>${t}T</span></h3>${svg}<p>${d}</p></div>`).join("");
+  const counts = {}; ALU.gates.forEach((g) => (counts[g.t] = (counts[g.t] || 0) + 1));
+  const TC = { INV: 2, BUF: 4, NAND2: 4, NOR2: 4, AND2: 6, OR2: 6, XOR2: 12, XNOR2: 12, MUX2: 6, MUX4: 22, FA: 28 };
+  const DESC = { INV: "Inverter", BUF: "Two inverters, restores a weak signal", NAND2: "2-input NAND", NOR2: "2-input NOR", AND2: "NAND2 + INV, also the isolation gate", OR2: "NOR2 + INV", XOR2: "Static CMOS XOR", XNOR2: "Static CMOS XNOR", MUX2: "Transmission-gate 2:1 mux", MUX4: "Three MUX2 + output buffer", FA: "Mirror full adder" };
+  $("#celltable").innerHTML = `<tr><th>Cell</th><th>What it is</th><th class="m">Transistors</th><th class="m">Used</th><th class="m">Total T</th></tr>` +
+    Object.keys(TC).map((k) => `<tr><td class="m">${k.toLowerCase()}</td><td>${DESC[k]}</td><td class="m">${TC[k]}</td><td class="m">${counts[k] || 0}</td><td class="m">${(TC[k] * (counts[k] || 0)).toLocaleString()}</td></tr>`).join("") +
+    `<tr><td class="m"><b>total</b></td><td></td><td></td><td class="m"><b>${ALU.STATS.cells}</b></td><td class="m"><b>${ALU.STATS.transistors.toLocaleString()}</b></td></tr>`;
+  $("#eqs").textContent = `EN_ARITH = (OP3'·OP2') + (OP3·OP2·OP1·OP0)      ADD SUB INC DEC, CMP
+EN_MUL   = OP3'·OP2·OP1'·OP0'                    MUL
+EN_LOGIC = OP3'·OP2·(OP1+OP0) + OP3·OP2'         AND OR XOR, NOT NAND NOR XNOR
+EN_SHIFT = OP3·OP2·(OP1·OP0)'                    SHL SHR ROL
+WE       = (OP0·OP1)' + (OP2·OP3)'               0 only for CMP (1111)
+
+ISO_EN_x = EN_x + ISO_OFF                        ISO_OFF = 1 turns isolation off (for comparison)
+
+Arithmetic control
+PASS = OP1' + OP3          use B (0 for INC/DEC)
+INV  = OP0 · ISO_EN_AR     invert B (SUB, DEC, CMP)
+CIN  = (OP0 XOR OP1 + OP3) · ISO_EN_AR
+B'_i = (B_i · PASS) XOR INV
+V    = c8 XOR c7
+
+Output mux select:  SEL1 = EN_LOGIC + EN_SHIFT,  SEL0 = EN_MUL + EN_SHIFT
+                    00 arith, 01 mul, 10 logic, 11 shift`;
+})();
+
+/* ---------------- cadence steps */
+(function cad() {
+  const code = (t) => `<div class="code"><button class="copy">Copy</button><pre>${esc(t)}</pre></div>`;
+  const steps = [
+    ["Copy the project to the Cadence machine", "Copy the whole project folder. You need <code>virtuoso/</code> and <code>model/</code>.", ""],
+    ["Find your PDK's model names", "In Virtuoso, place one nmos from your PDK in any schematic. In ADE choose Simulation → Netlist → Display. Note the model name on the transistor line, and the include path and section at the top.", ""],
+    ["Regenerate the netlists for your PDK", "Use your own model file path. The presets are gpdk045 (1.0 V), gpdk090 (1.2 V) and gpdk180 (1.8 V). You can override names with --nmos and --pmos.",
+      "cd virtuoso\npython3 gen_netlist.py --pdk gpdk045 --model-file /your/path/gpdk045/models/spectre/gpdk045.scs --section tt"],
+    ["Run Spectre with isolation on and off", "Each run is 30 vectors × 10 ns = 300 ns of transient.",
+      "spectre tb_alu8.scs +aps -format psfxl -raw ./psf\nspectre tb_alu8_noiso.scs +aps -format psfxl -raw ./psf_noiso"],
+    ["Check every vector with OCEAN", "The script prints PASS or FAIL per vector, the average power of each block, energy per operation and the worst-case adder delay.",
+      'ocean\nresDir = "./psf"\nload("alu8_check.ocn")\nresDir = "./psf_noiso"\nload("alu8_check.ocn")'],
+    ["Draw the schematics in Virtuoso", "Create library ALU8_LP attached to gpdk045. Draw each cell from cells.scs, make a symbol, and test it alone with vpulse inputs. Then build the blocks (decoder, iso, arith8, mul8, logic8, shift8, outmux) with iterated instances like I0&lt;7:0&gt; and bus names like A&lt;7:0&gt;. Node names match the virtual lab.", ""],
+    ["Simulate in ADE Explorer", "Place alu8 in a testbench: five vdc supplies = vdd, ISO_OFF = isooff·vdd, vpwl inputs (points from tb_alu8.scs), 5 fF loads. Analysis tran, stop 300n. Variables vdd = 1.0, isooff = 0. Plot the inputs, Y, Y_HI and the flags, and save the supply currents.", ""],
+    ["Measure and record", "Measure delay, power per block and energy per operation with isolation on, isolation off and VDD = 0.8 V. Enter them on the Results page.", ""],
+  ];
+  $("#cadsteps").innerHTML = steps.map(([t, d, c]) => `<li><div><h3 style="font-size:1.02rem">${t}</h3><p class="note" style="max-width:72ch">${d}</p>${c ? code(c) : ""}</div></li>`).join("");
+})();
+
+/* ---------------- results */
+(function results() {
+  const KEYS = ["ctrl", "arith", "mul", "logic", "shift"];
+  const on = progEnergy(true), off = progEnergy(false);
+  const tOn = on.reduce((a, b) => a + b), tOff = off.reduce((a, b) => a + b), max = Math.max(tOn, tOff), n = ALU.PROGRAM.length;
+  const bar = (E, tot, l) => `<div class="barrow"><span>${l}</span><div class="track">${KEYS.map((k, i) => `<i class="u-${k}" style="width:${(E[i] / max) * 100}%"></i>`).join("")}</div><span class="val">${(tot / n).toFixed(0)} fJ/op</span></div>`;
+  $("#rbars").innerHTML = bar(on, tOn, "Isolation on") + bar(off, tOff, "Isolation off");
+  $("#rlegend").innerHTML = KEYS.map((k) => `<span class="u-${k}">${UNIT_LABEL[k]}</span>`).join("");
+
+  const cols = ["P_ctrl µW", "P_arith µW", "P_mul µW", "P_logic µW", "P_shift µW", "P_total µW", "E/op pJ", "t_d ps"];
+  const rows = ["1.0 V, isolation ON", "1.0 V, isolation OFF", "0.8 V, isolation ON"];
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem("alu8-meas") || "{}"); } catch (e) { saved = {}; }
+  $("#meas").innerHTML = `<tr><th>Configuration</th>${cols.map((c) => `<th class="m">${c}</th>`).join("")}</tr>` +
+    rows.map((r, i) => `<tr><td>${r}</td>${cols.map((c, j) => `<td><input id="m${i}_${j}" inputmode="decimal" aria-label="${r} ${c}" value="${esc(saved[`m${i}_${j}`] || "")}"></td>`).join("")}</tr>`).join("");
+  $("#meas").addEventListener("input", (e) => {
+    if (e.target.id) saved[e.target.id] = e.target.value;
+    try { localStorage.setItem("alu8-meas", JSON.stringify(saved)); } catch (err) { /* storage unavailable */ }
+  });
+  $("#copyMeas").addEventListener("click", (e) => {
+    const md = `| Configuration | ${cols.join(" | ")} |\n|${"---|".repeat(cols.length + 1)}\n` +
+      rows.map((r, i) => `| ${r} | ${cols.map((c, j) => $(`#m${i}_${j}`).value || "").join(" | ")} |`).join("\n");
+    copyText(md, e.currentTarget);
+  });
+
+  $("#exptable").innerHTML = `<tr><th class="m">#</th><th class="m">t (ns)</th><th class="m">OP</th><th class="m">A</th><th class="m">B</th><th class="m">Y</th><th class="m">Y_HI</th><th class="m">C</th><th class="m">Z</th><th class="m">N</th><th class="m">V</th><th class="m">WE</th></tr>` +
+    ALU.PROGRAM.map(([op, a, b], k) => { const r = ALU.ref(a, b, op);
+      return `<tr><td class="m">${k}</td><td class="m">${k * 10}–${k * 10 + 10}</td><td class="m">${ALU.OPCODES[op][0]} ${ALU.OPCODES[op][1]}</td><td class="m">${hex(a)}</td><td class="m">${hex(b)}</td><td class="m">${hex(r.Y)}</td><td class="m">${hex(r.YH)}</td><td class="m">${r.C}</td><td class="m">${r.Z}</td><td class="m">${r.N}</td><td class="m">${r.V}</td><td class="m">${r.WE}</td></tr>`; }).join("");
+
+  const tech = [
+    ["ctrl", "Operand isolation", "Idle blocks get all-zero inputs, so they stop switching. The multiplier has more than half of all transistors, so keeping it quiet saves the most."],
+    ["arith", "Gated control signals", "The adder's invert and carry-in controls are ANDed with its enable, so the idle adder sits at all zeros."],
+    ["logic", "Transmission-gate muxes", "A TG 2:1 mux needs 6 transistors where a static CMOS mux needs 12, so less capacitance switches."],
+    ["mul", "Mirror full adder", "At most 3 transistors in series and symmetric networks, with less switched capacitance than an adder built from separate gates."],
+    ["shift", "Minimum-size devices", "Wn = 120 nm and Wp = 240 nm. Gate capacitance scales with width, and dynamic power scales with capacitance."],
+    ["ctrl", "Voltage scaling", "Dynamic energy scales with V². Going from 1.0 V to 0.8 V saves 36%, but the circuit gets slower."],
+  ];
+  $("#lptech").innerHTML = tech.map(([k, t, d]) => `<div class="block u-${k}"><h3>${t}</h3><p>${d}</p></div>`).join("");
+})();
+
+/* ---------------- netlists */
+(function files() {
+  const names = Object.keys(SITE_FILES);
+  const DESC = {
+    "cells.scs": "The CMOS cell library. Each line M… (drain gate source bulk) model w= l= is one transistor.",
+    "alu8.scs": "The whole ALU as one subcircuit: 341 cell instances, grouped by block.",
+    "tb_alu8.scs": "Transient testbench with operand isolation on: supplies, PWL inputs, loads and analysis.",
+    "tb_alu8_noiso.scs": "The same testbench with isolation off, for the power comparison.",
+    "alu8_check.ocn": "OCEAN script: checks all 30 vectors and prints power and delay.",
+    "alu_gates.py": "The gate-level description everything is generated from. Edit this to change the circuit.",
+  };
+  $("#ftabs").innerHTML = names.map((n, i) => `<button role="tab" aria-selected="${i === 0}" data-f="${n}">${n}</button>`).join("");
+  const show = (n) => {
+    document.querySelectorAll("#ftabs button").forEach((b) => b.setAttribute("aria-selected", b.dataset.f === n ? "true" : "false"));
+    $("#fcode").textContent = SITE_FILES[n];
+    $("#fdesc").textContent = `${DESC[n] || ""} ${SITE_FILES[n].split("\n").length} lines.`;
+  };
+  $("#ftabs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) show(b.dataset.f); });
+  if (names.length) show(names[0]);
+})();
+
+/*@@LEARN_JS@@*/
+
+route();
+})();
+</script>

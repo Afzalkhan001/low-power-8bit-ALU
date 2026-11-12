@@ -1,0 +1,348 @@
+  <header class="top"><div>
+    <div class="eyebrow">For first-year B.Tech students · no background needed</div>
+    <h1>Start here: what is what</h1>
+    <p class="lead">This page explains every idea used in the project, starting from what a bit is and ending with how Cadence simulates a chip. Each chapter has a small demo. Click things and watch what changes.</p>
+  </div></header>
+
+  <nav class="card toc" aria-label="Chapters">
+    <div class="eyebrow">Learning path · read in order, about 40 minutes</div>
+    <ol class="tocl">
+      <li><a href="#ch-what">What are we building?</a></li>
+      <li><a href="#ch-binary">Bits and binary numbers</a></li>
+      <li><a href="#ch-add">Adding in binary</a></li>
+      <li><a href="#ch-neg">Negative numbers and subtraction</a></li>
+      <li><a href="#ch-mul">Multiplying in binary</a></li>
+      <li><a href="#ch-logic">Logic gates and bitwise operations</a></li>
+      <li><a href="#ch-transistor">Transistors: the switches inside</a></li>
+      <li><a href="#ch-blocks">Building blocks: adder, mux, decoder</a></li>
+      <li><a href="#ch-alu">Putting the ALU together</a></li>
+      <li><a href="#ch-power">Power: why "low-power" matters</a></li>
+      <li><a href="#ch-tools">Cadence and simulation</a></li>
+      <li><a href="#ch-quiz">Check yourself</a></li>
+      <li><a href="#ch-glossary">Glossary</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1 -->
+  <section class="card chapter" id="ch-what">
+    <div class="chead"><span class="chn">1</span><h2>What are we building?</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>Your phone and laptop have a <b>processor</b> (CPU). Inside every processor there is a small part that does the actual math. It is called the <b>ALU</b>, short for <b>Arithmetic Logic Unit</b>.</p>
+        <ul>
+          <li><b>Arithmetic</b> means math: add, subtract, multiply.</li>
+          <li><b>Logic</b> means yes/no operations on bits: AND, OR, NOT and others.</li>
+          <li><b>Unit</b> means it is one block of the chip.</li>
+        </ul>
+        <p>Our ALU is <b>8-bit</b>: it works on numbers that are 8 binary digits long (0 to 255). It does <b>16 operations</b>. You choose the operation with a 4-bit code called the <b>opcode</b>.</p>
+        <p><b>VLSI</b> (Very Large Scale Integration) is the field of building circuits with thousands to billions of transistors on one chip. This project is a small VLSI design: 3,738 transistors.</p>
+        <p><b>Low-power</b> means we design it to use as little energy as possible, so batteries last longer and the chip stays cool.</p>
+        <div class="analogy"><b>Think of it like this:</b> the ALU is a calculator with 16 buttons. A and B are the two numbers you type. The opcode is the button you press. Y is the answer on the screen. The flags are little warning lights, such as "the answer was zero" or "the answer was too big".</div>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">The ALU from outside</div>
+        <svg viewBox="0 0 320 230" class="wsvg" role="img" aria-label="ALU black box">
+          <path d="M70 30 L250 30 L250 200 L70 200 Z" class="boxs"/>
+          <text x="160" y="110" text-anchor="middle" class="ink" font-size="26" font-weight="700" font-family="var(--f-display)">ALU</text>
+          <text x="160" y="132" text-anchor="middle" class="nl">16 operations</text>
+          <path d="M10 70 H70 M10 120 H70 M160 0 V30 M250 90 H310 M250 150 H310" class="w"/>
+          <text x="10" y="62" class="gl">A (8 bits)</text><text x="10" y="112" class="gl">B (8 bits)</text>
+          <text x="166" y="16" class="gl">opcode (4 bits)</text>
+          <text x="256" y="82" class="gl" style="fill:var(--hi)">Y answer</text><text x="256" y="142" class="gl" style="fill:var(--hi)">flags</text>
+        </svg>
+        <p class="small muted">The next chapters open this box, layer by layer.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="card chapter" id="ch-binary">
+    <div class="chead"><span class="chn">2</span><h2>Bits and binary numbers</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>A chip is made of switches. A switch is either <b>off</b> or <b>on</b>, so a chip stores information as <b>0</b> (off, 0 volts) and <b>1</b> (on, the supply voltage, 1 volt in our chip). One 0-or-1 is a <b>bit</b>. Eight bits make a <b>byte</b>.</p>
+        <p>In everyday numbers each place is worth 10× the one to its right (ones, tens, hundreds). In <b>binary</b> each place is worth 2× the one to its right:</p>
+        <p class="mono center">128 · 64 · 32 · 16 · 8 · 4 · 2 · 1</p>
+        <p>To read a binary number, add up the place values where there is a 1. For example, <span class="mono">00101101</span> = 32 + 8 + 4 + 1 = <b>45</b>.</p>
+        <ul>
+          <li>The leftmost bit (worth 128) is the <b>MSB</b>, most significant bit. We call it bit 7.</li>
+          <li>The rightmost bit (worth 1) is the <b>LSB</b>, least significant bit, bit 0.</li>
+          <li>8 bits can hold 0 to 255, which is 256 different values.</li>
+          <li><b>Hexadecimal</b> (hex) is a short way to write binary: every 4 bits become one symbol 0–9 or A–F. So 0010 1101 = <span class="mono">2D</span>.</li>
+        </ul>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">Try it: click the bits</div>
+        <div class="bits" id="w-bin"></div>
+        <div class="wout" id="w-bin-out"></div>
+        <div class="controls"><label class="small muted" for="w-bin-num">or type a number</label><input class="winput" id="w-bin-num" type="number" min="0" max="255" value="45"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="card chapter" id="ch-add">
+    <div class="chead"><span class="chn">3</span><h2>Adding in binary</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>You add binary numbers the same way you learned in school: column by column, right to left, carrying when a column gets too big. There are only four cases:</p>
+        <div class="scroll-x"><table class="data rules"><tr><th>Column</th><th>Sum</th><th>Write</th><th>Carry to next column</th></tr>
+          <tr><td class="m">0 + 0</td><td class="m">0</td><td class="m">0</td><td class="m">0</td></tr>
+          <tr><td class="m">0 + 1</td><td class="m">1</td><td class="m">1</td><td class="m">0</td></tr>
+          <tr><td class="m">1 + 1</td><td class="m">2</td><td class="m">0</td><td class="m">1</td></tr>
+          <tr><td class="m">1 + 1 + 1 (with carry)</td><td class="m">3</td><td class="m">1</td><td class="m">1</td></tr></table></div>
+        <p>In the ALU, each column is done by a small circuit called a <b>full adder</b>. Eight of them sit in a row, and each one passes its carry to the next. This is called <b>ripple carry</b>, because the carry ripples from right to left like a wave.</p>
+        <p>If the answer needs a 9th bit (more than 255), that extra bit comes out as the <b>carry flag C = 1</b>. For example, 255 + 1 gives 00000000 with C = 1.</p>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">Try it: add two numbers</div>
+        <div class="controls"><label class="small muted" for="w-add-a">A</label><input class="winput" id="w-add-a" type="number" min="0" max="255" value="45">
+          <label class="small muted" for="w-add-b">B</label><input class="winput" id="w-add-b" type="number" min="0" max="255" value="23"></div>
+        <div class="scroll-x" id="w-add"></div>
+        <p class="small muted" id="w-add-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="card chapter" id="ch-neg">
+    <div class="chead"><span class="chn">4</span><h2>Negative numbers and subtraction</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>A chip has no minus sign, so it needs a trick to store negative numbers. The trick used everywhere is called <b>two's complement</b>. To get −x from x:</p>
+        <ol><li>Flip every bit (0 becomes 1, 1 becomes 0). This is NOT x.</li><li>Add 1.</li></ol>
+        <p>With 8 bits, two's complement covers −128 to +127. Any number whose bit 7 is 1 is negative, which is why bit 7 is also the <b>negative flag N</b>.</p>
+        <p>This makes subtraction easy: <b>A − B = A + (NOT B) + 1</b>. The ALU does not need a separate subtractor. It flips B with XOR gates, sets the adder's first carry-in to 1, and uses the same adder.</p>
+        <p>For subtraction the carry flag means "no borrow": <b>C = 1 when A ≥ B</b>. The <b>overflow flag V</b> turns on when the signed answer does not fit in −128…127, for example 127 + 1.</p>
+        <div class="analogy"><b>Think of it like this:</b> a car's odometer at 000 that rolls back one step shows 999. In 8 bits, 0 − 1 rolls back to 11111111, and the chip treats that as −1.</div>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">Try it: make a number negative</div>
+        <div class="controls"><label class="small muted" for="w-neg-x">x</label><input class="winput" id="w-neg-x" type="number" min="1" max="127" value="23"></div>
+        <div class="scroll-x" id="w-neg"></div>
+        <p class="small muted" id="w-neg-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="card chapter" id="ch-mul">
+    <div class="chead"><span class="chn">5</span><h2>Multiplying in binary</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>Binary multiplication is long multiplication like in school, but simpler, because every digit of B is 0 or 1:</p>
+        <ul><li>If a bit of B is 1, write A (shifted to that bit's place).</li><li>If it is 0, write zeros.</li><li>Add all the rows.</li></ul>
+        <p>Each row is called a <b>partial product</b>. Making one partial-product bit is just an AND gate: a<sub>j</sub> AND b<sub>i</sub>. Our 8×8 multiplier uses 64 AND gates for the partial products and 56 full adders to add the rows. This arrangement is called an <b>array multiplier</b>.</p>
+        <p>8 bits × 8 bits can give a 16-bit answer (255 × 255 = 65,025), so the ALU has a second output, <b>Y_HI</b>, for the upper 8 bits.</p>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">Try it: 4-bit × 4-bit</div>
+        <div class="controls"><label class="small muted" for="w-mul-a">A</label><input class="winput" id="w-mul-a" type="number" min="0" max="15" value="12">
+          <label class="small muted" for="w-mul-b">B</label><input class="winput" id="w-mul-b" type="number" min="0" max="15" value="11"></div>
+        <div class="scroll-x" id="w-mul"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="card chapter" id="ch-logic">
+    <div class="chead"><span class="chn">6</span><h2>Logic gates and bitwise operations</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>A <b>logic gate</b> takes one or two bits in and gives one bit out by a fixed rule. A <b>truth table</b> lists the output for every possible input.</p>
+        <ul>
+          <li><b>AND</b>: 1 only if both inputs are 1.</li>
+          <li><b>OR</b>: 1 if at least one input is 1.</li>
+          <li><b>NOT</b>: flips the bit.</li>
+          <li><b>XOR</b> (exclusive OR): 1 if the inputs are different.</li>
+          <li><b>NAND</b>, <b>NOR</b>, <b>XNOR</b>: the same as AND, OR and XOR followed by NOT.</li>
+        </ul>
+        <p>A <b>bitwise</b> operation applies a gate to each of the 8 bit positions separately. So A AND B is eight AND gates working side by side.</p>
+        <p><b>Shifts</b> move all bits one place. Shift left (SHL) doubles a number, shift right (SHR) halves it. Rotate left (ROL) is a shift left where the bit falling off the left end comes back in on the right.</p>
+        <p>NAND and NOR are called <b>universal</b> gates because any other gate can be built from them. In CMOS they are also the cheapest gates, which is why the ALU's logic unit is built around NAND, NOR and XNOR.</p>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">Try it: gate playground</div>
+        <div class="tabs" id="w-gate-pick"></div>
+        <div class="gate-io">
+          <button class="bitbtn" id="w-gate-a" aria-pressed="false"><span>0</span><small>A</small></button>
+          <button class="bitbtn" id="w-gate-b" aria-pressed="false"><span>0</span><small>B</small></button>
+          <span class="arrowr">→</span>
+          <div class="led" id="w-gate-y">0</div><span class="small muted">output</span>
+        </div>
+        <div class="scroll-x" id="w-gate-tt"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="card chapter" id="ch-transistor">
+    <div class="chead"><span class="chn">7</span><h2>Transistors: the switches inside</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>A <b>MOSFET transistor</b> is a switch controlled by a voltage. It has three main terminals: the <b>gate</b> (the control), the <b>source</b> and the <b>drain</b> (the two ends of the switch). There are two kinds:</p>
+        <ul>
+          <li><b>NMOS</b>: the switch closes (conducts) when the gate is <b>1</b>. NMOS is good at pulling a wire down to 0 (ground).</li>
+          <li><b>PMOS</b>: the switch closes when the gate is <b>0</b>. It is drawn with a small circle on the gate. PMOS is good at pulling a wire up to 1 (VDD).</li>
+        </ul>
+        <p><b>CMOS</b> (Complementary MOS) uses both kinds in pairs. In every gate a PMOS network connects the output to VDD and an NMOS network connects it to ground, and only one of them is on at a time. Because there is never a direct path from VDD to ground when the inputs are steady, CMOS uses almost no power while it is not switching. That is why nearly every chip is CMOS.</p>
+        <p>The simplest CMOS gate is the <b>inverter</b> (NOT gate): one PMOS on top, one NMOS below. Try it on the right.</p>
+        <p>A <b>transmission gate</b> is an NMOS and a PMOS side by side, used as a two-way switch that passes a signal through. The ALU uses them to build multiplexers with fewer transistors.</p>
+        <p>The numbers in our netlist, like <code>w=120n l=45n</code>, are the transistor's <b>width</b> and <b>length</b> in nanometres. 45 nm is the technology size. Smaller widths mean less capacitance and less power.</p>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">Try it: CMOS inverter</div>
+        <svg viewBox="0 0 240 230" class="wsvg" id="w-inv" role="img" aria-label="CMOS inverter"></svg>
+        <div class="controls"><button class="btn primary" id="w-inv-btn">Input a = 0 · click to flip</button></div>
+        <p class="small muted" id="w-inv-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="card chapter" id="ch-blocks">
+    <div class="chead"><span class="chn">8</span><h2>Building blocks: adder, mux, decoder</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <h3>Full adder</h3>
+        <p>Adds three bits (a, b and the carry coming in) and gives a sum bit S and a carry out. Its rules: S = a XOR b XOR c<sub>in</sub>, and C<sub>out</sub> = 1 when at least two of the three inputs are 1. Our full adder is the 28-transistor <b>mirror adder</b>, a standard low-power CMOS design.</p>
+        <h3>Multiplexer (mux)</h3>
+        <p>A selector switch. It has several data inputs and a <b>select</b> input that chooses which one reaches the output. A 4:1 mux uses 2 select bits to pick 1 of 4 inputs. The ALU's output mux picks which block's answer goes to Y.</p>
+        <h3>Decoder</h3>
+        <p>Turns a code into "one wire on". Our opcode decoder looks at OP[3:0] and turns on exactly one of four enable wires: arithmetic, multiplier, logic or shifter.</p>
+        <h3>Buffer</h3>
+        <p>Two inverters in a row. The output equals the input, but with a fresh, strong signal. It is used after transmission gates, whose output gets weaker as it passes through.</p>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">Try it: full adder</div>
+        <div class="gate-io">
+          <button class="bitbtn" data-fa="a" aria-pressed="false"><span>0</span><small>a</small></button>
+          <button class="bitbtn" data-fa="b" aria-pressed="false"><span>0</span><small>b</small></button>
+          <button class="bitbtn" data-fa="c" aria-pressed="false"><span>0</span><small>cin</small></button>
+          <span class="arrowr">→</span>
+          <div class="flag"><div class="led" id="w-fa-co">0</div><span><b>Cout</b></span></div>
+          <div class="flag"><div class="led" id="w-fa-s">0</div><span><b>S</b></span></div>
+        </div>
+        <p class="small muted" id="w-fa-note"></p>
+        <div class="eyebrow" style="margin-top:8px">Try it: 2:1 mux</div>
+        <div class="gate-io">
+          <button class="bitbtn" data-mx="d0" aria-pressed="false"><span>0</span><small>d0</small></button>
+          <button class="bitbtn" data-mx="d1" aria-pressed="true"><span>1</span><small>d1</small></button>
+          <button class="bitbtn" data-mx="s" aria-pressed="false"><span>0</span><small>sel</small></button>
+          <span class="arrowr">→</span>
+          <div class="led" id="w-mx-y">0</div>
+        </div>
+        <p class="small muted" id="w-mx-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="card chapter" id="ch-alu">
+    <div class="chead"><span class="chn">9</span><h2>Putting the ALU together</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>Now every piece has a name. Here is what happens when you give the ALU two numbers and an opcode:</p>
+        <ol>
+          <li>The <b>decoder</b> reads the opcode and switches on one block.</li>
+          <li>The <b>isolation gates</b> (AND gates) let A and B into that block only. The other blocks see all zeros.</li>
+          <li>The block does its job: the <b>arithmetic unit</b> (adder), the <b>multiplier</b>, the <b>logic unit</b> or the <b>shifter</b>.</li>
+          <li>The <b>output mux</b> sends that block's answer to Y.</li>
+          <li>The <b>flags</b> are made from the answer.</li>
+        </ol>
+        <div class="scroll-x"><table class="data"><tr><th>Flag</th><th>Name</th><th>It is 1 when…</th><th>Example</th></tr>
+          <tr><td class="m">C</td><td>Carry</td><td>the answer did not fit in 8 bits (ADD), or there was no borrow (SUB), or a bit fell off (shift)</td><td class="m">255 + 1</td></tr>
+          <tr><td class="m">Z</td><td>Zero</td><td>every bit of the answer is 0</td><td class="m">5 − 5</td></tr>
+          <tr><td class="m">N</td><td>Negative</td><td>bit 7 of the answer is 1</td><td class="m">3 − 5</td></tr>
+          <tr><td class="m">V</td><td>Overflow</td><td>the signed answer is outside −128…127</td><td class="m">127 + 1</td></tr>
+          <tr><td class="m">WE</td><td>Write enable</td><td>the answer should be saved (0 only for CMP)</td><td class="m">CMP</td></tr></table></div>
+        <p><b>CMP</b> (compare) is a subtraction where only the flags matter. Z = 1 means A equals B, and C = 1 means A ≥ B. Processors use this for "if" statements.</p>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">See it all working</div>
+        <p class="small">The virtual lab shows every one of these steps live, with every bit coloured: amber is 1, grey is 0.</p>
+        <div class="scroll-x"><table class="data" id="w-ops"></table></div>
+        <a class="btn primary" href="#lab">Open the virtual lab</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="card chapter" id="ch-power">
+    <div class="chead"><span class="chn">10</span><h2>Power: why "low-power" matters</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>Every wire in a chip acts like a tiny capacitor, a small bucket of charge. When a wire switches from 0 to 1, charge flows in from the supply. When it switches back to 0, that charge is dumped to ground as heat. So <b>a chip uses energy every time a bit flips</b>. This is called <b>dynamic power</b>:</p>
+        <p class="formula">P = α · C · V² · f</p>
+        <ul>
+          <li><b>α</b> (alpha, activity): how often the wires flip. Fewer flips, less power.</li>
+          <li><b>C</b>: capacitance, the size of the buckets. Smaller transistors and shorter wires, less power.</li>
+          <li><b>V</b>: supply voltage. It is squared, so lowering V helps the most. 0.8 V instead of 1.0 V saves 36%.</li>
+          <li><b>f</b>: clock frequency, how many operations per second.</li>
+        </ul>
+        <p><b>Operand isolation</b> lowers α. Without it, A and B reach all four blocks, so the multiplier works hard even when you only asked for an AND. With it, idle blocks get zeros and their wires stay still.</p>
+        <div class="analogy"><b>Think of it like this:</b> a house where every room's lights turn on whenever anyone uses any room. Operand isolation is a switch per room: only the room in use gets light.</div>
+        <p>A <b>glitch</b> is a wire that flips more than once before it settles, because inputs arrive at different times. Glitches waste energy too. The virtual lab counts them.</p>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">Try it: dynamic power calculator</div>
+        <div class="sliders">
+          <label for="w-p-a">α activity</label><input type="range" id="w-p-a" min="0.02" max="0.5" step="0.01" value="0.15"><span class="mono" id="w-p-a-v"></span>
+          <label for="w-p-c">C total</label><input type="range" id="w-p-c" min="50" max="1000" step="10" value="400"><span class="mono" id="w-p-c-v"></span>
+          <label for="w-p-v">V supply</label><input type="range" id="w-p-v" min="0.6" max="1.2" step="0.05" value="1.0"><span class="mono" id="w-p-v-v"></span>
+          <label for="w-p-f">f clock</label><input type="range" id="w-p-f" min="10" max="500" step="10" value="100"><span class="mono" id="w-p-f-v"></span>
+        </div>
+        <div class="wout" id="w-p-out"></div>
+        <p class="small muted">The capacitance here is a made-up example value. Spectre measures the real power of the ALU.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="card chapter" id="ch-tools">
+    <div class="chead"><span class="chn">11</span><h2>Cadence and simulation</h2></div>
+    <div class="ch-grid">
+      <div class="prose">
+        <p>Making a real chip costs a lot and takes months, so engineers first <b>simulate</b> it on a computer. <b>Cadence</b> is a company whose software most chip designers use. The pieces used in this project:</p>
+        <ul>
+          <li><b>PDK</b> (Process Design Kit): files from the chip factory describing how its transistors behave. We use <b>gpdk045</b>, a free teaching kit for a 45 nm process.</li>
+          <li><b>Virtuoso</b>: the program where you draw <b>schematics</b>, which are circuit diagrams made of transistors and wires.</li>
+          <li><b>Netlist</b>: the circuit as a text file. Every line says which transistor connects to which wires. Our <code>.scs</code> files are netlists.</li>
+          <li><b>Spectre</b>: the circuit simulator. It solves the electrical equations and computes every voltage over time.</li>
+          <li><b>Transient analysis</b>: a simulation over time. We apply 30 input patterns, 10 ns each, and watch the outputs.</li>
+          <li><b>Testbench</b>: the circuit around the design that feeds it inputs (voltage sources) and loads its outputs.</li>
+          <li><b>ADE Explorer</b>: the window in Virtuoso where you set up and run simulations.</li>
+          <li><b>Waveform</b>: a graph of a voltage against time. A digital 1 shows as high, 0 as low.</li>
+          <li><b>OCEAN</b>: Cadence's scripting language. Our script checks all results automatically.</li>
+        </ul>
+        <p>Before Cadence, this project also checks the design with Python: once at gate level for all 1,048,576 input combinations, and once on the transistor netlist with every transistor treated as an on/off switch.</p>
+      </div>
+      <div class="widget">
+        <div class="eyebrow">The design flow</div>
+        <ol class="flow">
+          <li><b>Specify</b><span>16 operations, flags, 8-bit inputs</span></li>
+          <li><b>Gate design</b><span>model/alu_gates.py, checked in Python</span></li>
+          <li><b>Transistor netlist</b><span>cells.scs + alu8.scs</span></li>
+          <li><b>Schematic</b><span>drawn in Virtuoso</span></li>
+          <li><b>Simulate</b><span>Spectre transient, 300 ns</span></li>
+          <li><b>Measure</b><span>delay, power, energy per op</span></li>
+          <li><b>Compare</b><span>isolation on/off, 1.0 V vs 0.8 V</span></li>
+        </ol>
+        <a class="btn" href="#cadence">Step-by-step Cadence guide</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section class="card chapter" id="ch-quiz">
+    <div class="chead"><span class="chn">12</span><h2>Check yourself</h2></div>
+    <p class="note">Answer in your head, then click to see the answer.</p>
+    <div class="quiz" id="quiz"></div>
+  </section>
+
+  <!-- 13 -->
+  <section class="card chapter" id="ch-glossary">
+    <div class="chead"><span class="chn">13</span><h2>Glossary</h2></div>
+    <div class="controls"><input class="winput wide" id="gl-q" type="search" placeholder="Search a word, e.g. carry" aria-label="Search glossary"></div>
+    <div class="scroll-x"><table class="data" id="gl"></table></div>
+  </section>

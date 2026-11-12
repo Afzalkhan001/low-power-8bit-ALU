@@ -1,0 +1,35 @@
+# Publishes website/index.html to the gh-pages branch, which GitHub Pages serves at
+# https://afzalkhan001.github.io/low-power-8bit-ALU/
+name: Deploy website
+
+on:
+  push:
+    branches: [main]
+    paths: ["website/**", ".github/workflows/deploy-website.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-website
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish to gh-pages
+        run: |
+          mkdir out
+          cp website/index.html out/index.html
+          touch out/.nojekyll
+          cd out
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy website from ${GITHUB_SHA::7}"
+          git push -q --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages

@@ -1,0 +1,2 @@
+# Keep Unix line endings so the netlists and scripts work unchanged on the Linux Cadence machine
+* text=auto eol=lf
