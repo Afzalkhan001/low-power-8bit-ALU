@@ -44,6 +44,24 @@ Offline, the same website is the single file `website/index.html`. Double-click 
 
 ## Part B: get the files and run the checks
 
+### Quick start: you received a ZIP file
+
+1. **Unzip it first.** Right-click the ZIP → **Extract All…** → Extract. Don't run anything from inside the ZIP window.
+   On Linux: `unzip low-power-8bit-ALU.zip`
+2. **Install Python 3** if you don't have it: https://www.python.org/downloads
+   On Windows, tick **"Add Python to PATH"** on the first install screen.
+3. **Run the one-click check:**
+   - **Windows:** open the extracted folder and double-click **`run_checks.bat`**.
+     If Windows shows "Windows protected your PC", click **More info → Run anyway**. The file is a plain text script; you can open it in Notepad to read it first.
+   - **Linux / macOS:** open a terminal in the extracted folder and run:
+
+     ```bash
+     sh run_checks.sh
+     ```
+4. Wait about 40 seconds. You should see `ALL CHECKS PASSED`, and on Windows the website opens in your browser.
+
+That's the whole setup. To simulate in Cadence, go on to Part C. The steps below (1–3) do the same checks by hand, if you prefer that or got the project from GitHub.
+
 ### 1. Install the tools
 
 | Tool | Needed for | Get it |
@@ -105,7 +123,8 @@ node simulator/test_engine.js
 Do this on the Linux machine that has Cadence. The full guide is `docs/virtuoso_guide.md`, and the website's **Cadence flow** page has the same steps with copy buttons.
 
 ### 1. Copy the project to the Cadence machine
-Clone it there (Part B, step 2) or copy the folder over.
+Copy the ZIP over (USB, scp or email) and unzip it, or clone it there (Part B, step 2).
+To check that it works there, run `sh run_checks.sh`.
 
 ### 2. Find your PDK's model names
 Model names differ between PDK installs. To find yours:
@@ -193,6 +212,20 @@ If the website does not appear after the first push, open the repository on GitH
 
 ---
 
+## For the sender: making the ZIP
+
+Use one of these. Both leave out the hidden `.git` folder and the temporary files.
+
+- **Cleanest (needs Git):** in the project folder, run
+
+  ```bash
+  git archive --format=zip --prefix=low-power-8bit-ALU/ -o low-power-8bit-ALU.zip HEAD
+  ```
+  The ZIP contains exactly the files on GitHub, with the right line endings.
+- **Without Git (Windows):** delete any `__pycache__` folders, then right-click the project folder → **Send to → Compressed (zipped) folder**.
+
+Send the ZIP together with this file, or just tell the receiver to open `SETUP.md` inside it.
+
 ## Folder map
 
 | Folder / file | Contents |
@@ -203,6 +236,7 @@ If the website does not appear after the first push, open the repository on GitH
 | `website/` | The project website: `index.html` (generated) and `src/` (what you edit) |
 | `docs/virtuoso_guide.md` | Detailed Cadence guide, expected output table, low-power techniques |
 | `README.md` | Short project summary |
+| `run_checks.bat` / `run_checks.sh` | One-click setup check for Windows / Linux and macOS |
 
 ---
 
@@ -210,6 +244,8 @@ If the website does not appear after the first push, open the repository on GitH
 
 | Problem | Fix |
 |---|---|
+| `run_checks.bat` window closes at once, or nothing happens | Unzip first (Part B quick start, step 1). Running from inside the ZIP window does not work |
+| "Windows protected your PC" | Click **More info → Run anyway** |
 | `python` is not recognized | Reinstall Python with **Add Python to PATH** ticked, or use `py` on Windows or `python3` on Linux and macOS |
 | Spectre says `model g45n1svt not found` | Redo Part C step 2 and regenerate with `--nmos`, `--pmos` and `--section` |
 | Spectre cannot open the model file | The `--model-file` path is wrong. Ask your lab admin where gpdk045 is installed |

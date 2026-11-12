@@ -1,2 +1,4 @@
 # Keep Unix line endings so the netlists and scripts work unchanged on the Linux Cadence machine
 * text=auto eol=lf
+# Windows batch files need CRLF, or cmd.exe can misread labels
+*.bat text eol=crlf
