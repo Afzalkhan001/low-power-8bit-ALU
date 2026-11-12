@@ -23,7 +23,8 @@ An 8-bit arithmetic logic unit (ALU) designed from CMOS transistors for the VLSI
 
 ## Part A: view the website
 
-Open **https://afzalkhan001.github.io/low-power-8bit-ALU/**
+Open **https://8bitalu.vercel.app**
+(the same site is also at https://afzalkhan001.github.io/low-power-8bit-ALU/)
 
 The site has these pages (use the menu at the top):
 
@@ -182,7 +183,11 @@ python website/build_site.py
 
 To change the website's text, edit the files in `website/src/` (not `website/index.html`, which is generated), then run the last two commands.
 
-**Publishing:** push to the `main` branch. The workflow in `.github/workflows/deploy-website.yml` copies `website/index.html` to the `gh-pages` branch, and GitHub Pages serves it within about a minute.
+**Publishing:** push to the `main` branch. Both sites update by themselves within about a minute:
+- **Vercel** (8bitalu.vercel.app) redeploys from GitHub. `vercel.json` tells it to serve the `website/` folder, with no build step.
+- **GitHub Pages**: the workflow in `.github/workflows/deploy-website.yml` copies `website/index.html` to the `gh-pages` branch.
+
+If Vercel shows **404 NOT_FOUND**, check that `vercel.json` is in the repository root. In the Vercel project, also check **Settings → Build and Deployment**: Framework Preset **Other**, Root Directory empty.
 
 If the website does not appear after the first push, open the repository on GitHub, go to **Settings → Pages**, and set **Source: Deploy from a branch**, **Branch: gh-pages**, folder **/ (root)**.
 

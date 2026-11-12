@@ -3,7 +3,7 @@
 A transistor-level 8-bit ALU (3,738 MOSFETs, 341 CMOS cells) with 16 operations, a Spectre testbench for
 Cadence Virtuoso, and an interactive **virtual lab** that shows every 0 and 1 moving through the circuit.
 
-**Live website:** https://afzalkhan001.github.io/low-power-8bit-ALU/
+**Live website:** https://8bitalu.vercel.app (mirror: https://afzalkhan001.github.io/low-power-8bit-ALU/)
 **New here? Read [SETUP.md](SETUP.md)** for step-by-step setup, the checks and the Cadence run.
 
 ## Project website
